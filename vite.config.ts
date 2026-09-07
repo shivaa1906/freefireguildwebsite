@@ -15,8 +15,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
-      '/auth': 'http://localhost:3001',
+      '/api': 'https://squadel4x.netlify.app/',
+      '/auth': 'https://squadel4x.netlify.app/',
       '/ws': { target: 'ws://localhost:3001', ws: true },
     },
   },
