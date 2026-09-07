@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: free-fire-guild-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server/index.cjs
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_URI_2
+        sync: false
+      - key: MONGODB_URI_3
+        sync: false
+      - key: MONGODB_DB
+        value: free_fire_guild
+      - key: RANKING_MONGODB_DB
+        value: free_fire_rankings
+      - key: CHAT_MONGODB_DB
+        value: free_fire_chat
+      - key: APP_URL
+        value: https://squadel4x.netlify.app
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_REDIRECT_URI
+        value: https://free-fire-guild-api.onrender.com/auth/discord/callback
+      - key: DISCORD_ADMIN_IDS
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: DISCORD_COADMIN_ROLE_ID
+        sync: false
+      - key: DISCORD_REPORT_CHANNEL_ID
+        sync: false

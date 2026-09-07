@@ -302,8 +302,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, member]);
 
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const socketUrl = backendUrl
+      ? `${backendUrl.replace(/^http/, 'ws')}/ws`
+      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
+    const socket = new WebSocket(socketUrl);
     chatSocketRef.current = socket;
     socket.onopen = () => {
       while (queuedChatPayloads.current.length > 0) {

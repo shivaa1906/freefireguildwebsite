@@ -10,7 +10,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 
 const app = express();
 const httpServer = http.createServer(app);
-const port = Number(process.env.API_PORT || 3001);
+const port = Number(process.env.PORT || process.env.API_PORT || 3001);
 const mongoUrl = process.env.MONGODB_URI;
 const rankingMongoUrl = process.env.RANKING_MONGODB_URI || process.env.MONGODB_URI_2;
 const chatMongoUrl = process.env.CHAT_MONGODB_URI || process.env.MONGODB_URI_3;
@@ -921,8 +921,8 @@ app.delete('/api/:resource/:id', async (request, response) => {
   }
 });
 
-httpServer.listen(port, () => {
-  console.log(`MongoDB API listening on http://localhost:${port}`);
+httpServer.listen(port, '0.0.0.0', () => {
+  console.log(`MongoDB API listening on port ${port}`);
 });
 
 process.on('SIGINT', async () => {
