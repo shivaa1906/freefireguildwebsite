@@ -296,6 +296,20 @@ function sendChatTypingToParticipants(typingUser) {
   }
 }
 
+app.use((request, response, next) => {
+  const origin = request.headers.origin;
+  if (origin === appUrl || origin === 'http://localhost:5173') {
+    response.setHeader('Access-Control-Allow-Origin', origin);
+    response.setHeader('Access-Control-Allow-Credentials', 'true');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+  }
+  if (request.method === 'OPTIONS') {
+    response.sendStatus(204);
+    return;
+  }
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 
 if (discordBot) {

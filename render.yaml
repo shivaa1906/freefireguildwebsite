@@ -20,7 +20,7 @@ services:
       - key: CHAT_MONGODB_DB
         value: free_fire_chat
       - key: APP_URL
-        value: https://squadel4x.netlify.app
+        value: https://free-fire-guild-website.onrender.com
       - key: DISCORD_CLIENT_ID
         sync: false
       - key: DISCORD_CLIENT_SECRET
@@ -37,3 +37,10 @@ services:
         sync: false
       - key: DISCORD_REPORT_CHANNEL_ID
         sync: false
+  - type: static_site
+    name: free-fire-guild-website
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://free-fire-guild-api.onrender.com

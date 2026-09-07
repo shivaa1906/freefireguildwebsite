@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { GuildMember, UserRole, ApprovalStatus, CharacterConfig, JoinApplication, GuildEvent, Announcement, GuildSettings, DiscordPresence, MemberStats, ChatMessage, ChatTypingUser, RankingTask, RankingScore } from '@/types';
 import { CHAT_ROLES } from '@/types';
 import { mockAnnouncements, mockEvents, mockMembers } from '@/data/mockData';
-import { guildApi } from '@/lib/api';
+import { BACKEND_URL, guildApi } from '@/lib/api';
 
 export type AppView =
   | 'landing'
@@ -424,7 +424,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = () => {
-    window.location.assign('/auth/discord');
+    window.location.assign(`${BACKEND_URL}/auth/discord`);
   };
 
   const openComposer = (target: ComposerTarget) => setComposerTarget(target);
@@ -432,7 +432,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/auth/me', { credentials: 'include' })
+    fetch(`${BACKEND_URL}/api/auth/me`, { credentials: 'include' })
       .then((response) => response.ok ? response.json() : null)
       .then((session) => {
         if (!session?.authenticated) return;
@@ -479,7 +479,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    void fetch(`${BACKEND_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     setAuthenticated(false);
     setMember(null);
     setView('landing');

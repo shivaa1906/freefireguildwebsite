@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+const API_BASE = `${BACKEND_URL}/api`;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
