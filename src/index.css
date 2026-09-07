@@ -1,0 +1,371 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-ink-600;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink-900 text-gray-300 font-body antialiased;
+    overflow-x: hidden;
+  }
+
+  .effects-disabled .particle-field,
+  .low-graphics .particle-field {
+    display: none;
+  }
+
+  .reduce-motion *,
+  .reduce-motion *::before,
+  .reduce-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  input,
+  textarea,
+  select {
+    color: #f8fafc !important;
+    caret-color: #f8fafc;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8;
+    opacity: 1;
+  }
+
+  .theme-bright {
+    color-scheme: light;
+  }
+
+  .theme-bright body {
+    @apply bg-gray-100 text-gray-800;
+  }
+
+  .theme-bright input,
+  .theme-bright textarea,
+  .theme-bright select {
+    color: #111827 !important;
+    caret-color: #111827;
+  }
+
+  .theme-bright .bg-ink-900 {
+    background-color: #eef2f6;
+  }
+
+  .theme-bright .bg-ink-900\/80,
+  .theme-bright .bg-ink-900\/90 {
+    background-color: rgba(255, 255, 255, 0.94);
+  }
+
+  .theme-bright .bg-ink-800,
+  .theme-bright .bg-ink-800\/30,
+  .theme-bright .bg-ink-800\/50,
+  .theme-bright .bg-ink-800\/60 {
+    background-color: rgba(226, 232, 240, 0.8);
+  }
+
+  .theme-bright .bg-ink-700\/50,
+  .theme-bright .bg-ink-700\/60 {
+    background-color: rgba(255, 255, 255, 0.94);
+  }
+
+  .theme-bright .text-white {
+    color: #0f172a;
+  }
+
+  .theme-bright .text-gray-300,
+  .theme-bright .text-gray-400 {
+    color: #475569;
+  }
+
+  .theme-bright .text-gray-500 {
+    color: #64748b;
+  }
+
+  .theme-bright .text-tactical-300 {
+    color: #526277;
+  }
+
+  .theme-bright .text-tactical-400 {
+    color: #334155;
+  }
+
+  .theme-bright [class~="hover:text-tactical-200"]:hover {
+    color: #334155;
+  }
+
+  .theme-bright .text-neon-300 {
+    color: #a16207;
+  }
+
+  .theme-bright .text-neon-400 {
+    color: #b45309;
+  }
+
+  .theme-bright .bg-tactical-grid {
+    background-image: linear-gradient(rgba(71, 85, 105, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(71, 85, 105, 0.08) 1px, transparent 1px);
+  }
+
+  .theme-bright .border-ink-600,
+  .theme-bright .border-tactical-700\/30,
+  .theme-bright .border-tactical-700\/40 {
+    border-color: #cbd5e1;
+  }
+
+  .theme-bright [class~="hover:bg-ink-800/40"]:hover {
+    background-color: rgba(226, 232, 240, 0.75);
+  }
+
+  .theme-bright ::-webkit-scrollbar-track {
+    background-color: #e2e8f0;
+  }
+
+  .theme-bright ::-webkit-scrollbar-thumb {
+    background-color: #94a3b8;
+  }
+
+  .theme-bright .glass-panel,
+  .theme-bright .tactical-card {
+    background-color: rgba(255, 255, 255, 0.88);
+    border-color: #cbd5e1;
+    backdrop-filter: blur(8px);
+  }
+
+  .theme-bright .section-title {
+    color: #172033;
+  }
+
+  .theme-bright .hud-label {
+    color: #64748b;
+  }
+
+  .theme-bright .btn-outline {
+    color: #334155;
+    border-color: #94a3b8;
+  }
+
+  .theme-bright .btn-outline:hover {
+    color: #92400e;
+    border-color: #d97706;
+    background-color: rgba(245, 166, 35, 0.1);
+  }
+
+  .theme-bright .vignette-overlay {
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(203, 213, 225, 0.2) 100%) !important;
+  }
+
+  ::selection {
+    @apply bg-neon-500/30 text-white;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-ink-800;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-tactical-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-tactical-500;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: '"Orbitron"', system-ui, sans-serif;
+  }
+  .font-heading {
+    font-family: '"Rajdhani"', system-ui, sans-serif;
+  }
+  .font-mono {
+    font-family: '"JetBrains Mono"', ui-monospace, monospace;
+  }
+
+  /* Glass panel */
+  .glass-panel {
+    @apply bg-ink-700/60 backdrop-blur-md border border-tactical-700/40;
+  }
+
+  /* Tactical card */
+  .tactical-card {
+    @apply bg-ink-700/50 border border-tactical-700/30 backdrop-blur-sm transition-all duration-300;
+  }
+  .tactical-card:hover {
+    @apply border-neon-500/40;
+    box-shadow: 0 0 30px rgba(245, 166, 35, 0.1);
+  }
+
+  /* Neon button */
+  .btn-neon {
+    @apply relative px-6 py-3 font-heading font-semibold uppercase tracking-wider text-ink-900 bg-neon-500 transition-all duration-300;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  .btn-neon:hover {
+    @apply bg-neon-400;
+    box-shadow: 0 0 25px rgba(245, 166, 35, 0.5);
+  }
+
+  /* Outline button */
+  .btn-outline {
+    @apply relative px-6 py-3 font-heading font-semibold uppercase tracking-wider text-tactical-200 border border-tactical-500/50 transition-all duration-300;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  .btn-outline:hover {
+    @apply text-neon-300 border-neon-500/60 bg-neon-500/5;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply relative px-6 py-3 font-heading font-semibold uppercase tracking-wider text-white bg-alert-500 transition-all duration-300;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  .btn-danger:hover {
+    @apply bg-alert-400;
+    box-shadow: 0 0 25px rgba(255, 68, 68, 0.4);
+  }
+
+  /* Section title */
+  .section-title {
+    @apply font-display font-bold uppercase tracking-[0.2em] text-white;
+  }
+
+  /* HUD label */
+  .hud-label {
+    @apply font-mono text-xs uppercase tracking-widest text-tactical-300;
+  }
+
+  .profile-marquee-track {
+    display: inline-flex;
+    width: max-content;
+    animation: profile-marquee 14s linear infinite;
+  }
+
+  .chat-action {
+    @apply flex w-full items-center gap-3 rounded-md px-3 py-2 text-left font-heading text-sm text-gray-200 transition-colors hover:bg-ink-700 hover:text-white;
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  @keyframes profile-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Corner brackets */
+  .corner-brackets {
+    position: relative;
+  }
+  .corner-brackets::before,
+  .corner-brackets::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-color: rgba(245, 166, 35, 0.5);
+    border-style: solid;
+  }
+  .corner-brackets::before {
+    top: -1px;
+    left: -1px;
+    border-width: 2px 0 0 2px;
+  }
+  .corner-brackets::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 2px 2px 0;
+  }
+
+  /* Scan line overlay */
+  .scan-overlay {
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(245, 166, 35, 0.6), transparent);
+    animation: scanLine 3s linear infinite;
+  }
+
+  /* Text glow */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(245, 166, 35, 0.5);
+  }
+  .text-glow-blue {
+    text-shadow: 0 0 20px rgba(58, 143, 184, 0.5);
+  }
+
+  /* Clip path utilities */
+  .clip-tactical {
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  .clip-tactical-lg {
+    clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-neon-300 via-neon-400 to-neon-500 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .perspective-2000 {
+    perspective: 2000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .text-shadow-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
