@@ -73,10 +73,14 @@
     color-scheme: light;
   }
 
-  .theme-switching *,
-  .theme-switching *::before,
-  .theme-switching *::after {
-    transition: none !important;
+  .theme-switching,
+  .theme-switching body,
+  .theme-switching body * ,
+  .theme-switching body *::before,
+  .theme-switching body *::after {
+    transition-property: background-color, color, border-color, box-shadow, fill, stroke !important;
+    transition-duration: 450ms !important;
+    transition-timing-function: ease-in-out !important;
   }
 
   .theme-bright body {

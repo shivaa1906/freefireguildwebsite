@@ -265,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setThemeState(nextTheme);
       localStorage.setItem('guild-theme', nextTheme);
       document.documentElement.classList.toggle('theme-bright', nextTheme === 'bright');
-      requestAnimationFrame(() => document.documentElement.classList.remove('theme-switching'));
+      window.setTimeout(() => document.documentElement.classList.remove('theme-switching'), 500);
     };
     applyTheme();
   };
