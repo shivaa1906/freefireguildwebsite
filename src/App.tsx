@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { AuthProvider, useAuth, type AppView } from '@/context/AuthContext';
 import { LandingPage } from '@/pages/LandingPage';
@@ -14,6 +14,23 @@ import { Announcements } from '@/pages/Announcements';
 import { ChatPage } from '@/pages/ChatPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage, SettingsPage } from '@/pages/ProfileSettings';
+import { NotFoundPage, ServerErrorPage } from '@/pages/ErrorPages';
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(_error: Error, _info: ErrorInfo) {
+    this.setState({ hasError: true });
+  }
+
+  render() {
+    return this.state.hasError ? <ServerErrorPage /> : this.props.children;
+  }
+}
 
 function AppContent() {
   const { authLoading, isAuthenticated, view, setView, members, member } = useAuth();
@@ -22,6 +39,10 @@ function AppContent() {
   const memberId = query.get('member');
   const adminTab = query.get('adminTab');
   const openedMember = memberId ? members.find((item) => item.id === memberId) : null;
+
+  if (window.location.pathname !== '/') {
+    return <NotFoundPage />;
+  }
 
   useEffect(() => {
     if (memberId && view === 'loading') setView('members');
@@ -130,7 +151,9 @@ function MemberDetailsLoading() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <AppErrorBoundary>
+        <AppContent />
+      </AppErrorBoundary>
     </AuthProvider>
   );
 }

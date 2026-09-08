@@ -4,6 +4,7 @@ import type { GuildMember, UserRole } from '@/types';
 import { guildApi } from '@/lib/api';
 import { ROLE_LABELS, ROLE_COLORS } from '@/types';
 import { GridBackground, ParticleField, ScanLines, Vignette, AnimatedNumber } from '@/components/effects/VisualEffects';
+import { ForbiddenPage } from '@/pages/ErrorPages';
 import { Shield, Users, Clock, Ban, UserPlus, Search, Check, X, AlertTriangle, Settings, ChevronLeft, ChevronRight, MessageCircle, Trash2, Save, RotateCcw, KeyRound, RefreshCw, Bell } from 'lucide-react';
 
 type AdminTab = 'overview' | 'pending' | 'members' | 'chat' | 'apiKeys' | 'settings';
@@ -189,15 +190,7 @@ export function AdminDashboard() {
   const isOwner = member?.role === 'admin' && member.isOwner !== false;
   const canMonitorChat = member?.role === 'admin' || member?.role === 'coadmin';
   if (!canManage) {
-    return (
-      <div className="min-h-screen bg-ink-900 flex items-center justify-center pt-16">
-        <div className="text-center">
-          <Shield size={48} className="text-alert-500 mx-auto mb-4" />
-          <h1 className="font-display font-bold text-2xl text-white uppercase tracking-wider">Access Denied</h1>
-          <p className="font-mono text-sm text-gray-500 mt-2">ADMIN CLEARANCE REQUIRED</p>
-        </div>
-      </div>
-    );
+    return <ForbiddenPage />;
   }
 
   const pendingMembers = members.filter((m) => m.status === 'pending' && Boolean(m.application));
