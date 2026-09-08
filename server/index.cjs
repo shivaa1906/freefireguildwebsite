@@ -444,7 +444,16 @@ if (discordBot) {
   });
   discordBot.on(Events.GuildMemberUpdate, async (_oldMember, guildMember) => {
     if (guildMember.guild.id !== discordGuildId) return;
-    const roleData = getDiscordRoleData(guildMember);
+    let roleData = getDiscordRoleData(guildMember);
+    const assignedRoleId = roleData.role === 'recruit' ? discordRoleIds.members : discordRoleIds[roleData.role];
+    if (assignedRoleId && roleMemberLimits[roleData.role]) {
+      const assignedCount = guildMember.guild.members.cache.filter((candidate) => candidate.id !== guildMember.id && candidate.roles.cache.has(assignedRoleId)).size;
+      if (assignedCount >= roleMemberLimits[roleData.role]) {
+        await guildMember.roles.remove(Object.values(discordRoleIds).filter(Boolean)).catch(() => undefined);
+        if (discordRoleIds.members) await guildMember.roles.add(discordRoleIds.members).catch(() => undefined);
+        roleData = { role: 'recruit', isOwner: roleData.isOwner };
+      }
+    }
     broadcast({ type: 'role', discordId: guildMember.id, ...roleData });
     broadcast({ type: 'profile', discordId: guildMember.id, ...getDiscordProfileData(guildMember) });
     for (const [token, session] of sessions.entries()) {
@@ -1166,9 +1175,14 @@ async function syncDiscordRole(discordUserId, role) {
   if (!guild) return;
   const guildMember = await guild.members.fetch(discordUserId).catch(() => null);
   if (!guildMember) return;
+  const discordRole = role === 'recruit' ? discordRoleIds.members : discordRoleIds[role];
+  if (discordRole && roleMemberLimits[role]) {
+    const guildMembers = await guild.members.fetch();
+    const assignedCount = guildMembers.filter((member) => member.id !== discordUserId && member.roles.cache.has(discordRole)).size;
+    if (assignedCount >= roleMemberLimits[role]) throw new Error(`${role} Discord role is full.`);
+  }
   const managedRoleIds = Object.values(discordRoleIds).filter(Boolean);
   await guildMember.roles.remove(managedRoleIds);
-  const discordRole = role === 'recruit' ? discordRoleIds.members : discordRoleIds[role];
   if (discordRole) await guildMember.roles.add(discordRole);
 }
 
@@ -1781,13 +1795,18 @@ app.patch('/api/:resource/:id', async (request, response) => {
         return response.status(409).json({ error: `${roleNames[changes.role]} can contain only ${roleMemberLimits[changes.role]} member${roleMemberLimits[changes.role] === 1 ? '' : 's'}. Remove or change an existing ${roleNames[changes.role].toLowerCase()} first.` });
       }
     }
-    if (db) await db.collection(collectionName).updateOne({ id: request.params.id }, { $set: changes });
-    else updateLocalDocument(collectionName, request.params.id, changes);
     if (changesRole && request.params.resource === 'members') {
       await syncDiscordRole(request.params.id.replace(/^discord_/, ''), changes.role);
     }
+    if (db) await db.collection(collectionName).updateOne({ id: request.params.id }, { $set: changes });
+    else updateLocalDocument(collectionName, request.params.id, changes);
     response.json(publicMember({ id: request.params.id, ...changes }));
   } catch (error) {
+    if (changesRole && error.message.includes('full')) {
+      const roleNames = { admin: 'Guild Leader', coadmin: 'Acting Leader', moderator: 'Elder', member: 'Guild Member' };
+      return response.status(409).json({ error: `${roleNames[changes.role]} can contain only ${roleMemberLimits[changes.role]} member${roleMemberLimits[changes.role] === 1 ? '' : 's'}. Remove or change an existing ${roleNames[changes.role].toLowerCase()} first.` });
+    }
+    if (changesRole) return response.status(502).json({ error: `Discord role synchronization failed: ${error.message}` });
     console.warn(`MongoDB update unavailable, using local data: ${error.message}`);
     updateLocalDocument(collectionName, request.params.id, changes);
     response.json(publicMember({ id: request.params.id, ...changes }));

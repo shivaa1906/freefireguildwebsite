@@ -722,5 +722,5 @@ export function AdminDashboard() {
 }
 
 function isNonGuildMember(member: GuildMember) {
-  return member.role === 'recruit' || member.isInDiscordGuild === false;
+  return member.role === 'recruit';
 }
