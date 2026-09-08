@@ -4,8 +4,10 @@ import { GridBackground, ParticleField, Vignette } from '@/components/effects/Vi
 import { Clock, ShieldQuestion, Upload, FileImage, LogIn, X, ExternalLink, RefreshCw } from 'lucide-react';
 
 export function PendingApproval() {
-  const { member, isAuthenticated, setView, submitJoinApplication } = useAuth();
-  const [form, setForm] = useState({ fullName: '', gameId: '', experience: '', imageName: '', acceptedTerms: false });
+  const { member, isAuthenticated, setView, submitJoinApplication, guildSettings } = useAuth();
+  const strongVerification = Boolean(guildSettings.strongVerification);
+  const [verificationCode] = useState(() => `FF-${Math.random().toString(36).slice(2, 8).toUpperCase()}`);
+  const [form, setForm] = useState({ fullName: '', gameId: '', region: 'ind', experience: '', imageName: '', verificationProofName: '', acceptedTerms: false });
   const [submitted, setSubmitted] = useState(Boolean(member?.application));
   const needsDiscordJoin = Boolean(member && member.isInDiscordGuild === false);
 
@@ -16,7 +18,12 @@ export function PendingApproval() {
       return;
     }
     if (!form.fullName || !form.gameId || !form.imageName || !form.acceptedTerms) return;
-    submitJoinApplication(form);
+    if (strongVerification && !form.verificationProofName) return;
+    submitJoinApplication({
+      ...form,
+      verificationMode: strongVerification ? 'strong' : 'recommended',
+      ...(strongVerification ? { verificationCode } : {}),
+    });
     setSubmitted(true);
   };
 
@@ -69,7 +76,7 @@ export function PendingApproval() {
           {needsDiscordJoin ? (
             <div className="space-y-4 mb-8">
               <p className="text-gray-400 font-heading text-base leading-relaxed">Joining the Discord server is optional for browsing, but required before guild access and chat can be enabled.</p>
-              <a href="https://discord.com/oauth2/authorize?client_id=1546098098575511603" target="_blank" rel="noreferrer" className="btn-neon w-full flex items-center justify-center gap-2">
+              <a href={guildSettings.discordServerUrl || import.meta.env.VITE_DISCORD_SERVER_URL || 'https://discord.gg/78bscsw4Yr'} target="_blank" rel="noreferrer" className="btn-neon w-full flex items-center justify-center gap-2">
                 <ExternalLink size={16} /> Install Discord App
               </a>
               <button onClick={() => window.location.reload()} className="btn-outline w-full flex items-center justify-center gap-2">
@@ -81,7 +88,19 @@ export function PendingApproval() {
               <p className="text-gray-400 font-heading text-sm">Complete your application before an admin or co-admin can review your request.</p>
               <input required placeholder="Full name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="w-full px-4 py-3 bg-ink-800/60 border border-tactical-700/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
               <input required placeholder="Free Fire ID" value={form.gameId} onChange={(e) => setForm({ ...form, gameId: e.target.value })} className="w-full px-4 py-3 bg-ink-800/60 border border-tactical-700/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
+              <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className="w-full px-4 py-3 bg-ink-800/60 border border-tactical-700/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical">
+                {['ind', 'br', 'sg', 'ru', 'id', 'tw', 'us', 'vn', 'th', 'me', 'pk', 'cis', 'bd'].map((region) => <option key={region} value={region}>{region.toUpperCase()}</option>)}
+              </select>
               <textarea placeholder="Tell us about your play style" value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value })} rows={3} className="w-full px-4 py-3 bg-ink-800/60 border border-tactical-700/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical resize-none" />
+              {strongVerification && <div className="p-4 border border-warning-500/40 bg-warning-500/5 clip-tactical">
+                <div className="font-mono text-xs text-warning-300 uppercase tracking-wider">Stronger verification required</div>
+                <p className="mt-2 text-sm text-gray-400 font-heading">Add this code to your Free Fire profile, then upload a screenshot showing your UID and the code.</p>
+                <div className="mt-3 px-3 py-2 bg-ink-900/70 border border-warning-500/30 text-center font-mono font-bold tracking-widest text-warning-300">{verificationCode}</div>
+                <label className="flex items-center gap-3 mt-3 px-4 py-3 border border-dashed border-warning-500/40 text-tactical-200 cursor-pointer">
+                  <Upload size={18} className="text-warning-400" /><span className="font-heading text-sm truncate">{form.verificationProofName || 'Upload UID + code screenshot'}</span>
+                  <input required type="file" accept="image/*" className="sr-only" onChange={(e) => setForm({ ...form, verificationProofName: e.target.files?.[0]?.name || '' })} />
+                </label>
+              </div>}
               <label className="flex items-center gap-3 px-4 py-3 border border-dashed border-tactical-600 text-tactical-200 cursor-pointer">
                 <Upload size={18} className="text-neon-400" /><span className="font-heading text-sm truncate">{form.imageName || 'Upload profile image'}</span>
                 <input required type="file" accept="image/*" className="sr-only" onChange={(e) => setForm({ ...form, imageName: e.target.files?.[0]?.name || '' })} />

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import type { GuildMember, UserRole, ApprovalStatus, CharacterConfig, JoinApplication, GuildEvent, Announcement, GuildSettings, DiscordPresence, MemberStats, ChatMessage, ChatTypingUser, RankingTask, RankingScore } from '@/types';
-import { CHAT_ROLES } from '@/types';
+import type { GuildMember, UserRole, ApprovalStatus, CharacterConfig, JoinApplication, GuildEvent, Announcement, GuildSettings, GuildProfile, DiscordPresence, MemberStats, ChatMessage, ChatTypingUser, RankingTask, RankingScore } from '@/types';
+import { CHAT_ROLES, EMPTY_MEMBER_STATS } from '@/types';
 import { mockAnnouncements, mockEvents, mockMembers } from '@/data/mockData';
 import { BACKEND_URL, guildApi } from '@/lib/api';
 
@@ -33,17 +33,19 @@ interface AuthState {
   openComposer: (target: ComposerTarget) => void;
   clearComposer: () => void;
   updateCharacter: (config: CharacterConfig) => void;
-  updateMemberProfile: (changes: { bio?: string; stats?: MemberStats }) => void;
+  updateMemberProfile: (changes: { bio?: string; stats?: MemberStats; freeFireUid?: string }) => void;
+  saveHlGamingApiKey: (apiKey: string) => Promise<void>;
   chatMessages: ChatMessage[];
   typingUsers: ChatTypingUser[];
   sendChatMessage: (content: string, recipientId?: string, attachment?: ChatMessage['attachment']) => void;
+  refreshChatMessages: () => void;
   sendChatTyping: (isTyping: boolean, recipientId?: string) => void;
   markChatMessagesSeen: (messageIds: string[]) => void;
   deleteChatMessage: (id: string) => void;
   approveMember: (id: string) => void;
   rejectMember: (id: string) => void;
-  suspendMember: (id: string) => void;
-  updateMemberRole: (id: string, role: UserRole) => void;
+  suspendMember: (id: string) => Promise<void>;
+  updateMemberRole: (id: string, role: UserRole) => Promise<void>;
   requestAccess: () => void;
   submitJoinApplication: (application: JoinApplication) => void;
   members: GuildMember[];
@@ -56,9 +58,13 @@ interface AuthState {
   deleteAnnouncement: (id: string) => void;
   guildSettings: GuildSettings;
   updateGuildSettings: (settings: GuildSettings) => Promise<void>;
+  updateDiscordServerUrl: (discordServerUrl: string) => Promise<void>;
+  updateStrongVerification: (enabled: boolean) => Promise<void>;
   theme: 'dark' | 'bright';
   setTheme: (theme: 'dark' | 'bright') => void;
   guildStats: { totalMembers: number; onlineMembers: number };
+  guildProfile: GuildProfile | null;
+  guildProfileError: string | null;
   rankingTasks: RankingTask[];
   rankingScores: RankingScore[];
   rankingError: string | null;
@@ -117,6 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [guildSettings, setGuildSettings] = useState<GuildSettings>({ id: 'guild', name: 'Free Fire Guild HQ', description: 'A competitive Free Fire guild. Booyah or nothing.' });
   const [theme, setThemeState] = useState<'dark' | 'bright'>(() => (localStorage.getItem('guild-theme') as 'dark' | 'bright') || 'dark');
   const [guildStats, setGuildStats] = useState({ totalMembers: mockMembers.length, onlineMembers: mockMembers.filter((item) => item.isOnline).length });
+  const [guildProfile, setGuildProfile] = useState<GuildProfile | null>(null);
+  const [guildProfileError, setGuildProfileError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<DisplayPreferences>(() => {
     try {
       return { ...defaultPreferences, ...JSON.parse(localStorage.getItem('guild-preferences') || '{}') };
@@ -250,9 +258,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [preferences.ambientAudio]);
 
   const setTheme = (nextTheme: 'dark' | 'bright') => {
-    setThemeState(nextTheme);
-    localStorage.setItem('guild-theme', nextTheme);
-    document.documentElement.classList.toggle('theme-bright', nextTheme === 'bright');
+    if (nextTheme === theme) return;
+    const applyTheme = () => {
+      document.documentElement.classList.add('theme-switching');
+      setThemeState(nextTheme);
+      localStorage.setItem('guild-theme', nextTheme);
+      document.documentElement.classList.toggle('theme-bright', nextTheme === 'bright');
+      requestAnimationFrame(() => document.documentElement.classList.remove('theme-switching'));
+    };
+    applyTheme();
   };
 
   useEffect(() => {
@@ -288,6 +302,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!guildSettings.guildOwnerUid && !member?.freeFireUid && !member?.application?.gameId) return;
+    guildApi.guildProfile<GuildProfile>()
+      .then((profile) => {
+        setGuildProfile(profile);
+        setGuildProfileError(null);
+      })
+      .catch((error: Error) => setGuildProfileError(error.message));
+  }, [guildSettings.guildOwnerUid, member?.freeFireUid, member?.application?.gameId]);
+
+  useEffect(() => {
     if (!isAuthenticated || !member || !CHAT_ROLES.includes(member.role)) return;
     Promise.all([
       guildApi.list<RankingTask>('ranking-tasks'),
@@ -314,17 +338,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data) as { type?: string; discordId?: string; status?: DiscordPresence; isOnline?: boolean; role?: UserRole; isOwner?: boolean; displayName?: string; discordName?: string; discordDisplayName?: string; discordAvatar?: string; totalMembers?: number; onlineMembers?: number; chatMessage?: ChatMessage; messages?: ChatMessage[]; messageId?: string; typingUser?: ChatTypingUser; messageIdList?: string[]; readerId?: string; score?: RankingScore };
+      const message = JSON.parse(event.data) as { type?: string; title?: string; content?: string; discordId?: string; status?: DiscordPresence; isOnline?: boolean; discordStatus?: string; role?: UserRole; isOwner?: boolean; displayName?: string; discordName?: string; discordDisplayName?: string; discordAvatar?: string; discordBio?: string; bio?: string; totalMembers?: number; onlineMembers?: number; chatMessage?: ChatMessage; messages?: ChatMessage[]; messageId?: string; typingUser?: ChatTypingUser; messageIdList?: string[]; readerId?: string; score?: RankingScore };
       if (message.type === 'guild:stats' && typeof message.totalMembers === 'number' && typeof message.onlineMembers === 'number') {
         setGuildStats({ totalMembers: message.totalMembers, onlineMembers: message.onlineMembers });
         return;
       }
       if (message.type === 'chat:history' && message.messages) {
-        const storedDms = readStoredDirectMessages();
-        const merged = [...message.messages, ...storedDms.filter((stored) => !message.messages!.some((incoming) => incoming.id === stored.id))];
-        setChatMessages(merged);
-        storeDirectMessages(merged);
+        setChatMessages(message.messages);
+        storeDirectMessages(message.messages);
         return;
+      }
+      if (message.type === 'device:notification' && message.content) {
+        if ('Notification' in window && Notification.permission === 'granted') new Notification(message.title || 'Guild notification', { body: message.content });
       }
       if (message.type === 'chat:message' && message.chatMessage) {
         const currentMember = memberRef.current;
@@ -379,10 +404,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!message.discordId) return;
       if (message.type === 'presence' && message.status) {
         latestPresenceRef.current[message.discordId!] = message.status;
-        setMembers((current) => current.map((item) => item.discordId === message.discordId ? { ...item, presence: message.status, isOnline: message.isOnline ?? message.status !== 'offline' } : item));
+        setMembers((current) => current.map((item) => item.discordId === message.discordId ? { ...item, presence: message.status, isOnline: message.isOnline ?? message.status !== 'offline', ...(message.discordStatus !== undefined ? { discordStatus: message.discordStatus } : {}) } : item));
         setMember((current) => {
           if (!current || current.discordId !== message.discordId) return current;
-          return { ...current, presence: message.status, isOnline: message.isOnline ?? message.status !== 'offline' };
+          return { ...current, presence: message.status, isOnline: message.isOnline ?? message.status !== 'offline', ...(message.discordStatus !== undefined ? { discordStatus: message.discordStatus } : {}) };
         });
       }
       if (message.type === 'role' && message.role) {
@@ -392,11 +417,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { ...current, role: message.role!, isOwner: message.isOwner, status: message.role === 'recruit' ? current.status : 'approved' };
         });
       }
-      if (message.type === 'profile' && message.discordDisplayName && message.discordName && message.discordAvatar) {
-        setMembers((current) => current.map((item) => item.discordId === message.discordId ? { ...item, discordDisplayName: message.discordDisplayName!, discordAvatar: message.discordAvatar!, discordName: message.discordName! } : item));
+      if (message.type === 'profile' && message.discordId) {
+        setMembers((current) => current.map((item) => item.discordId === message.discordId ? { ...item, ...(message.discordDisplayName ? { discordDisplayName: message.discordDisplayName } : {}), ...(message.discordAvatar ? { discordAvatar: message.discordAvatar } : {}), ...(message.discordName ? { discordName: message.discordName } : {}), ...(message.discordBio ? { discordBio: message.discordBio } : {}) } : item));
         setMember((current) => {
           if (!current || current.discordId !== message.discordId) return current;
-          return { ...current, discordDisplayName: message.discordDisplayName!, discordAvatar: message.discordAvatar!, discordName: message.discordName! };
+          return { ...current, ...(message.discordDisplayName ? { discordDisplayName: message.discordDisplayName } : {}), ...(message.discordAvatar ? { discordAvatar: message.discordAvatar } : {}), ...(message.discordName ? { discordName: message.discordName } : {}), ...(message.discordBio ? { discordBio: message.discordBio } : {}) };
         });
       }
     };
@@ -447,7 +472,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMember(normalizedMember);
         setMembers((current) => [...current.filter((item) => item.id !== normalizedMember.id), normalizedMember]);
         setAuthenticated(true);
-        setView(session.member.status === 'pending' ? 'members' : 'loading');
+        setView(session.member.isInDiscordGuild === false ? 'pending' : 'loading');
       })
       .catch(() => undefined)
       .finally(() => {
@@ -471,10 +496,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const submitJoinApplication = (application: JoinApplication) => {
     if (!member) return;
-    const newMember = { ...member, status: 'pending' as ApprovalStatus, role: 'recruit' as UserRole, application };
+    const newMember = { ...member, status: 'pending' as ApprovalStatus, role: 'recruit' as UserRole, freeFireUid: application.gameId, application };
     setMember(newMember);
     setMembers((current) => [...current.filter((item) => item.id !== newMember.id), newMember]);
-    void guildApi.save('members', newMember).catch(() => undefined);
+    void guildApi.save<GuildMember>('members', newMember).then((savedMember) => {
+      setMember(savedMember);
+      setMembers((current) => [...current.filter((item) => item.id !== savedMember.id), savedMember]);
+    }).catch(() => undefined);
     setView('pending');
   };
 
@@ -491,12 +519,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateMemberProfile = (changes: { bio?: string; stats?: MemberStats }) => {
+  const updateMemberProfile = (changes: { bio?: string; stats?: MemberStats; freeFireUid?: string }) => {
     if (!member) return;
     const updatedMember = { ...member, ...changes };
     setMember(updatedMember);
     setMembers((current) => current.map((item) => item.id === updatedMember.id ? updatedMember : item));
     void guildApi.update<GuildMember>('members', updatedMember.id, changes).catch(() => undefined);
+  };
+
+  const saveHlGamingApiKey = async (apiKey: string) => {
+    if (!member) throw new Error('You must be signed in to save an HL Gaming API key.');
+    await guildApi.saveHlGamingApiKey(member.id, apiKey);
+    const updatedMember = { ...member, hasHlGamingApiKey: true };
+    setMember(updatedMember);
+    setMembers((current) => current.map((item) => item.id === updatedMember.id ? updatedMember : item));
   };
 
   const sendChatMessage = (content: string, recipientId?: string, attachment?: ChatMessage['attachment']) => {
@@ -509,8 +545,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else if (socket?.readyState === WebSocket.CONNECTING) queuedChatPayloads.current.push(payload);
   };
 
+  const refreshChatMessages = () => {
+    const payload = JSON.stringify({ type: 'chat:refresh' });
+    const socket = chatSocketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) socket.send(payload);
+    else if (socket?.readyState === WebSocket.CONNECTING) queuedChatPayloads.current.push(payload);
+  };
+
   const deleteChatMessage = (id: string) => {
     if (!member || (member.role !== 'admin' && member.role !== 'coadmin')) return;
+    setChatMessages((current) => current.filter((item) => item.id !== id));
     const payload = JSON.stringify({ type: 'chat:delete', id });
     const socket = chatSocketRef.current;
     if (socket?.readyState === WebSocket.OPEN) socket.send(payload);
@@ -544,15 +588,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void guildApi.remove('members', id).catch(() => undefined);
   };
 
-  const suspendMember = (id: string) => {
+  const suspendMember = async (id: string) => {
+    await guildApi.update<GuildMember>('members', id, { status: 'suspended' });
     setMembers((current) => current.map((item) => item.id === id ? { ...item, status: 'suspended' } : item));
-    void guildApi.update<GuildMember>('members', id, { status: 'suspended' }).catch(() => undefined);
   };
 
-  const updateMemberRole = (id: string, role: UserRole) => {
+  const updateMemberRole = async (id: string, role: UserRole) => {
+    await guildApi.update<GuildMember>('members', id, { role });
     setMembers((current) => current.map((item) => item.id === id ? { ...item, role } : item));
     setMember((current) => current?.id === id ? { ...current, role } : current);
-    void guildApi.update<GuildMember>('members', id, { role }).catch(() => undefined);
   };
 
   const createMember = (newMember: GuildMember) => {
@@ -578,6 +622,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateGuildSettings = async (settings: GuildSettings) => {
     setGuildSettings(settings);
     await guildApi.save('settings', settings);
+    if (settings.guildOwnerUid) {
+      try {
+        const refreshed = await guildApi.refreshGuildProfile<{
+          guildProfile: GuildProfile;
+          ownerStats: (Partial<MemberStats> & { freeFireUid?: string }) | null;
+          ownerMemberId?: string | null;
+        }>();
+        setGuildProfile(refreshed.guildProfile);
+        const ownerStats = refreshed.ownerStats;
+        if (refreshed.ownerMemberId && ownerStats) {
+          setMembers((current) => current.map((item) => item.id === refreshed.ownerMemberId
+            ? { ...item, freeFireUid: ownerStats.freeFireUid || settings.guildOwnerUid, stats: { ...EMPTY_MEMBER_STATS, ...item.stats, ...ownerStats } }
+            : item));
+          setMember((current) => {
+            if (!current || current.id !== refreshed.ownerMemberId) return current;
+            return { ...current, freeFireUid: ownerStats.freeFireUid || settings.guildOwnerUid, stats: { ...EMPTY_MEMBER_STATS, ...current.stats, ...ownerStats } };
+          });
+        }
+      } catch {
+      }
+    }
+  };
+
+  const updateDiscordServerUrl = async (discordServerUrl: string) => {
+    const updatedSettings = { ...guildSettings, discordServerUrl };
+    await guildApi.update<GuildSettings>('settings', 'guild', { discordServerUrl });
+    setGuildSettings(updatedSettings);
+  };
+
+  const updateStrongVerification = async (enabled: boolean) => {
+    const updatedSettings = { ...guildSettings, strongVerification: enabled };
+    await guildApi.update<GuildSettings>('settings', 'guild', { strongVerification: enabled });
+    setGuildSettings(updatedSettings);
   };
 
   const createRankingTask = (task: RankingTask) => {
@@ -615,9 +692,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearComposer,
         updateCharacter,
         updateMemberProfile,
+        saveHlGamingApiKey,
         chatMessages,
         typingUsers,
         sendChatMessage,
+        refreshChatMessages,
         sendChatTyping,
         markChatMessagesSeen,
         deleteChatMessage,
@@ -637,9 +716,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         deleteAnnouncement,
         guildSettings,
         updateGuildSettings,
+        updateDiscordServerUrl,
+        updateStrongVerification,
         theme,
         setTheme,
         guildStats,
+        guildProfile,
+        guildProfileError,
         rankingTasks,
         rankingScores,
         rankingError,

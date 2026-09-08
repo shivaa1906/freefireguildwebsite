@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth, type AppView } from '@/context/AuthContext';
 import { GridBackground, ParticleField, ScanLines, Vignette, HudCorners } from '@/components/effects/VisualEffects';
 import { mockMapLocations } from '@/data/mockData';
-import { Building2, Users, Shirt, Trophy, Megaphone, MessageCircle, ChevronRight } from 'lucide-react';
+import { Building2, Users, Shirt, Trophy, Megaphone, MessageCircle, ChevronRight, Crown, Hash, RefreshCw } from 'lucide-react';
 import type { MapLocation } from '@/types';
 
 const ICON_MAP: Record<string, typeof Building2> = {
@@ -19,31 +19,16 @@ interface GuildLobbyProps {
 }
 
 export function GuildLobby({ onNavigate }: GuildLobbyProps) {
-  const { member, guildSettings } = useAuth();
+  const { member, guildSettings, guildProfile, guildProfileError } = useAuth();
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
-  const [cameraZoom, setCameraZoom] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    setCameraZoom(true);
-  }, []);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setMousePos({ x, y });
-  };
 
   const visibleLocations = mockMapLocations.filter(
     (loc) => !loc.adminOnly || member?.role === 'admin'
   );
 
   return (
-    <div className="min-h-screen bg-ink-900 relative overflow-hidden pt-16" ref={containerRef} onMouseMove={handleMouseMove}>
+    <div className="min-h-screen bg-ink-900 relative overflow-hidden pt-16">
       <GridBackground />
       <ParticleField count={50} />
       <ScanLines />
@@ -72,19 +57,9 @@ export function GuildLobby({ onNavigate }: GuildLobbyProps) {
         <div className="max-w-7xl mx-auto">
           <div
             className="relative aspect-[16/10] md:aspect-[16/9] w-full overflow-hidden"
-            style={{
-              perspective: '1200px',
-              transform: `rotateX(${5 + mousePos.y * 3}deg) rotateY(${mousePos.x * -3}deg)`,
-              transition: 'transform 0.2s ease-out',
-            }}
           >
             {/* Island base */}
-            <div
-              className={`absolute inset-0 transition-transform duration-[2000ms] ease-out ${
-                cameraZoom ? 'scale-100' : 'scale-150'
-              }`}
-              style={{ transformStyle: 'preserve-3d' }}
-            >
+            <div className="hidden">
               {/* Ocean background */}
               <div
                 className="absolute inset-0"
@@ -227,7 +202,25 @@ export function GuildLobby({ onNavigate }: GuildLobbyProps) {
               />
             </div>
 
-            <div className="absolute inset-0 bg-ink-900" aria-hidden="true" />
+            <div className="absolute inset-0 bg-ink-950/95 border border-tactical-700/30 p-5 md:p-8 flex items-center" aria-label="Guild profile">
+              <div className="w-full max-w-3xl mx-auto">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div>
+                    <div className="hud-label mb-1">LIVE GUILD PROFILE · {guildProfile?.region || 'IND'}</div>
+                    <h2 className="font-display font-black text-2xl md:text-4xl text-white uppercase tracking-wider">{guildProfile?.guildName || 'Guild profile unavailable'}</h2>
+                  </div>
+                  <RefreshCw size={22} className="text-tactical-400" aria-label="Weekly refresh cache" />
+                </div>
+                {guildProfile ? <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <GuildDetail icon={Hash} label="Guild ID" value={guildProfile.guildId} />
+                  <GuildDetail icon={Trophy} label="Guild Level" value={String(guildProfile.guildLevel)} />
+                  <GuildDetail icon={Users} label="Members" value={`${guildProfile.memberCount} / ${guildProfile.capacity}`} />
+                  <GuildDetail icon={Crown} label="Owner Name" value={guildProfile.ownerName} />
+                  <GuildDetail icon={Hash} label="Owner UID" value={guildProfile.ownerId} />
+                  <GuildDetail icon={RefreshCw} label="Updated" value={new Date(guildProfile.refreshedAt).toLocaleDateString()} />
+                </div> : <p className="font-mono text-sm text-gray-500">{guildProfileError || 'Guild details are waiting for the Free Fire data provider.'}</p>}
+              </div>
+            </div>
 
             <HudCorners />
           </div>
@@ -307,4 +300,8 @@ export function GuildLobby({ onNavigate }: GuildLobbyProps) {
       )}
     </div>
   );
+}
+
+function GuildDetail({ icon: Icon, label, value }: { icon: typeof Hash; label: string; value: string }) {
+  return <div className="border border-tactical-700/40 bg-ink-900/60 p-4 min-h-20"><div className="flex items-center gap-2 text-tactical-400"><Icon size={14} /><span className="font-mono text-[10px] uppercase tracking-widest">{label}</span></div><div className="mt-2 font-heading font-bold text-white text-sm break-words">{value || 'N/A'}</div></div>;
 }

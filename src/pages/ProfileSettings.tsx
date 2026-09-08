@@ -1,15 +1,18 @@
 import { useAuth } from '@/context/AuthContext';
 import { EMPTY_MEMBER_STATS, ROLE_LABELS, ROLE_COLORS, type DiscordPresence, type MemberStats } from '@/types';
 import { GridBackground, ParticleField, Vignette } from '@/components/effects/VisualEffects';
-import { User, Award, Shield, Edit2, Save, X, Bell, Lock, Globe, ExternalLink } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { User, Award, Shield, Edit2, Save, X, Bell, Lock, Globe, ExternalLink, KeyRound } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export function ProfilePage() {
-  const { member, updateMemberProfile } = useAuth();
+  const { member, updateMemberProfile, rankingScores } = useAuth();
+  const discordBio = member?.discordBio || '';
+  const discordStatus = member?.discordStatus || '';
+  const rankScore = member ? rankingScores.filter((score) => score.memberId === member.id).reduce((total, score) => total + score.points, 0) : 0;
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState(member?.bio || '');
-  const [statsEditing, setStatsEditing] = useState(false);
-  const [statsDraft, setStatsDraft] = useState<MemberStats>(member?.stats ?? EMPTY_MEMBER_STATS);
+  const [freeFireUid, setFreeFireUid] = useState(member?.freeFireUid || member?.application?.gameId || '');
+  const [uidEditing, setUidEditing] = useState(false);
 
   if (!member) return null;
 
@@ -27,8 +30,12 @@ export function ProfilePage() {
             <h1 className="section-title text-3xl md:text-4xl">My Profile</h1>
           </div>
 
-          {/* Profile card */}
+          {/* Discord profile card */}
           <div className="glass-panel clip-tactical-lg p-8 mb-6 animate-fade-in-up">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="font-mono text-xs text-neon-400 uppercase tracking-widest">Discord Profile</div>
+              <a href={`https://discord.com/users/${member?.discordId}`} target="_blank" rel="noreferrer" className="btn-outline px-3 py-2 text-xs flex items-center gap-2 shrink-0"><ExternalLink size={13} /> Open Discord</a>
+            </div>
             <div className="flex flex-col md:flex-row gap-8">
               {/* Avatar */}
               <div className="flex flex-col items-center gap-4">
@@ -48,23 +55,27 @@ export function ProfilePage() {
               {/* Info */}
               <div className="flex-1 space-y-4">
                 <div>
-                  <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Display Name</div>
-                  <div className="font-display font-bold text-2xl text-white">{member.displayName}</div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="font-display font-bold text-2xl text-white">{member.displayName}</div>
+                    <div className="inline-flex max-w-full rounded-md border border-tactical-600/60 bg-ink-800/50 px-3 py-2">
+                      <span className="font-heading text-sm text-tactical-200 break-words">{discordStatus || 'What\'s on your mind?'}</span>
+                    </div>
+                  </div>
+                  <div className="font-heading text-base text-tactical-200 mt-1">{member.discordName}</div>
                 </div>
                 <div>
-                  <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Discord</div>
-                  <div className="font-heading text-base text-tactical-200">{member.discordName}</div>
+                  <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Discord Bio</div>
+                  <div className="font-heading text-sm text-gray-400 leading-relaxed">{discordBio || 'No Discord bio set.'}</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Discord ID</div>
                     <div className="font-mono text-xs text-tactical-200">{member.discordId}</div>
                   </div>
-                  <a href={`https://discord.com/users/${member.discordId}`} target="_blank" rel="noreferrer" className="btn-outline px-3 py-2 text-xs flex items-center gap-2"><ExternalLink size={13} /> Open Discord</a>
                 </div>
                 <div>
-                  <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Rank</div>
-                  <div className="font-heading font-semibold text-neon-300">{member.rank}</div>
+                  <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Rank Score</div>
+                  <div className="font-heading font-semibold text-neon-300">{rankScore.toLocaleString()} pts</div>
                 </div>
                 <div>
                   <div className="font-mono text-xs text-gray-500 uppercase tracking-widest mb-1">Joined</div>
@@ -81,59 +92,47 @@ export function ProfilePage() {
                 <User size={20} className="text-neon-400" />
                 <h3 className="font-heading font-bold text-white text-lg uppercase tracking-wider">Bio</h3>
               </div>
-              {editing ? (
+              <Lock size={16} className="text-gray-600" aria-label="Read-only bio" />
+            </div>
+            <p className="text-gray-400 font-heading text-base leading-relaxed">{member.bio || 'No website bio set.'}</p>
+          </div>
+
+          <div className="glass-panel clip-tactical p-6 mb-6 animate-fade-in-up" style={{ animationDelay: '125ms' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Shield size={20} className="text-neon-400" />
+                <h3 className="font-heading font-bold text-white text-lg uppercase tracking-wider">Free Fire UID</h3>
+              </div>
+              {uidEditing ? (
                 <div className="flex gap-2">
-                  <button onClick={() => { setEditing(false); setBio(member.bio); }} className="p-2 text-gray-500 hover:text-alert-400 transition-colors">
-                    <X size={18} />
-                  </button>
-                  <button onClick={() => { updateMemberProfile({ bio }); setEditing(false); }} className="p-2 text-gray-500 hover:text-success-400 transition-colors">
-                    <Save size={18} />
-                  </button>
+                  <button onClick={() => { setFreeFireUid(member.freeFireUid || member.application?.gameId || ''); setUidEditing(false); }} className="p-2 text-gray-500 hover:text-alert-400 transition-colors" aria-label="Cancel UID editing"><X size={18} /></button>
+                  <button onClick={() => { if (/^\d{5,15}$/.test(freeFireUid.trim())) { updateMemberProfile({ freeFireUid: freeFireUid.trim() }); setUidEditing(false); } }} className="p-2 text-gray-500 hover:text-success-400 transition-colors" aria-label="Save Free Fire UID"><Save size={18} /></button>
                 </div>
               ) : (
-                <button onClick={() => setEditing(true)} className="p-2 text-gray-500 hover:text-neon-400 transition-colors">
-                  <Edit2 size={16} />
-                </button>
+                <button onClick={() => setUidEditing(true)} className="p-2 text-gray-500 hover:text-neon-400 transition-colors" aria-label="Edit Free Fire UID"><Edit2 size={16} /></button>
               )}
             </div>
-            {editing ? (
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={3}
-                className="w-full px-4 py-3 bg-ink-800/50 border border-tactical-700/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical resize-none"
-              />
+            {uidEditing ? (
+              <input value={freeFireUid} inputMode="numeric" pattern="[0-9]{5,15}" onChange={(event) => setFreeFireUid(event.target.value.replace(/\D/g, ''))} placeholder="Enter Free Fire UID" className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
             ) : (
-              <p className="text-gray-400 font-heading text-base leading-relaxed">{bio}</p>
+              <div className="font-display font-bold text-xl text-white">{freeFireUid || 'Not submitted'}</div>
             )}
+            <p className="mt-2 font-mono text-xs text-gray-500">Only the Free Fire UID can be edited here. Combat stats remain read-only.</p>
           </div>
 
           {/* Stats section */}
           <div className="glass-panel clip-tactical p-6 mb-6 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-heading font-bold text-white text-lg uppercase tracking-wider">Combat Stats</h3>
-              {statsEditing ? (
-                <div className="flex gap-2">
-                  <button onClick={() => { setStatsDraft(member.stats ?? EMPTY_MEMBER_STATS); setStatsEditing(false); }} className="p-2 text-gray-500 hover:text-alert-400 transition-colors" aria-label="Cancel stats editing">
-                    <X size={18} />
-                  </button>
-                  <button onClick={() => { updateMemberProfile({ stats: statsDraft }); setStatsEditing(false); }} className="p-2 text-gray-500 hover:text-success-400 transition-colors" aria-label="Save combat stats">
-                    <Save size={18} />
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => setStatsEditing(true)} className="p-2 text-gray-500 hover:text-neon-400 transition-colors" aria-label="Edit combat stats">
-                  <Edit2 size={16} />
-                </button>
-              )}
+              <Lock size={16} className="text-gray-600" aria-label="Read-only combat stats" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <StatField label="Account Level" value={statsDraft.accountLevel} editing={statsEditing} onChange={(value) => setStatsDraft({ ...statsDraft, accountLevel: value })} />
-              <StatField label="Matches" value={statsDraft.matches} editing={statsEditing} onChange={(value) => setStatsDraft({ ...statsDraft, matches: value })} />
-              <StatField label="Win Rate" suffix="%" value={statsDraft.winRate} editing={statsEditing} onChange={(value) => setStatsDraft({ ...statsDraft, winRate: value })} max={100} step="0.1" />
-              <StatField label="Eliminations" value={statsDraft.eliminations} editing={statsEditing} onChange={(value) => setStatsDraft({ ...statsDraft, eliminations: value })} />
-              <StatField label="Booyahs" value={statsDraft.booyahs} editing={statsEditing} onChange={(value) => setStatsDraft({ ...statsDraft, booyahs: value })} />
-              <StatField label="Headshot Rate" suffix="%" value={statsDraft.headshotRate} editing={statsEditing} onChange={(value) => setStatsDraft({ ...statsDraft, headshotRate: value })} max={100} step="0.1" />
+              <StatField label="Account Level" value={member.stats?.accountLevel ?? EMPTY_MEMBER_STATS.accountLevel} />
+              <StatField label="Matches" value={member.stats?.matches ?? EMPTY_MEMBER_STATS.matches} />
+              <StatField label="Win Rate" suffix="%" value={member.stats?.winRate ?? EMPTY_MEMBER_STATS.winRate} />
+              <StatField label="Eliminations" value={member.stats?.eliminations ?? EMPTY_MEMBER_STATS.eliminations} />
+              <StatField label="Booyahs" value={member.stats?.booyahs ?? EMPTY_MEMBER_STATS.booyahs} />
+              <StatField label="Headshot Rate" suffix="%" value={member.stats?.headshotRate ?? EMPTY_MEMBER_STATS.headshotRate} />
             </div>
           </div>
 
@@ -175,15 +174,11 @@ export function ProfilePage() {
   );
 }
 
-function StatField({ label, suffix = '', value, editing, onChange, max, step = '1' }: { label: string; suffix?: string; value: number; editing: boolean; onChange: (value: number) => void; max?: number; step?: string }) {
+function StatField({ label, suffix = '', value }: { label: string; suffix?: string; value: number }) {
   return (
     <div className="p-3 bg-ink-800/30 border border-ink-600">
       <div className="font-mono text-[10px] text-gray-500 uppercase tracking-widest mb-2">{label}</div>
-      {editing ? (
-        <input type="number" min="0" max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} className="w-full px-2 py-1 bg-ink-800/60 border border-tactical-700/40 text-white font-display text-lg focus:border-neon-500/50 focus:outline-none" />
-      ) : (
-        <div className="font-display font-bold text-xl text-white">{value.toLocaleString()}{suffix}</div>
-      )}
+      <div className="font-display font-bold text-xl text-white">{value.toLocaleString()}{suffix}</div>
     </div>
   );
 }
@@ -210,8 +205,12 @@ function getPresenceDotColor(presence: DiscordPresence | undefined): string {
 }
 
 export function SettingsPage() {
-  const { member, logout, theme, setTheme, preferences, updatePreference, previewNotificationSound } = useAuth();
+  const { member, logout, theme, setTheme, preferences, updatePreference, previewNotificationSound, saveHlGamingApiKey } = useAuth();
   const customSoundInputRef = useRef<HTMLInputElement>(null);
+  const [hlGamingApiKey, setHlGamingApiKey] = useState('');
+  const [apiKeySaved, setApiKeySaved] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState('');
+  const [showApiInstructions, setShowApiInstructions] = useState(false);
 
   return (
     <div className="min-h-screen bg-ink-900 relative overflow-hidden pt-16">
@@ -240,6 +239,21 @@ export function SettingsPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="glass-panel clip-tactical p-6 mb-6 animate-fade-in-up">
+            <div className="flex items-center gap-2 mb-2">
+              <KeyRound size={20} className="text-neon-400" />
+              <h3 className="font-heading font-bold text-white text-lg uppercase tracking-wider">HL Gaming API Key</h3>
+            </div>
+            <p className="font-mono text-xs text-gray-500 mb-4">Members with a saved key refresh every 7 days. The key is encrypted on the server and never displayed again. Members without a key use the shared pool and refresh every 14 days.</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input id="hl-gaming-api-key" type="password" value={hlGamingApiKey} onChange={(event) => setHlGamingApiKey(event.target.value)} placeholder={member?.hasHlGamingApiKey ? 'API key already saved' : 'Enter HL Gaming API key'} className="flex-1 px-4 py-3 bg-ink-800/50 border border-tactical-700/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
+              <button onClick={() => { setApiKeyError(''); if (hlGamingApiKey.trim().length < 8) { setApiKeyError('Enter a valid HL Gaming API key.'); return; } void saveHlGamingApiKey(hlGamingApiKey.trim()).then(() => { setHlGamingApiKey(''); setApiKeySaved(true); setTimeout(() => setApiKeySaved(false), 2500); }).catch((error: Error) => setApiKeyError(error.message)); }} className="btn-neon inline-flex items-center justify-center gap-2"><Save size={16} /> Save Key</button>
+            </div>
+            {apiKeySaved && <div className="mt-2 font-mono text-xs text-success-400">API KEY SAVED SECURELY</div>}
+            {apiKeyError && <div className="mt-2 font-mono text-xs text-alert-400">{apiKeyError}</div>}
+            <button onClick={() => setShowApiInstructions(true)} className="mt-4 btn-outline inline-flex items-center gap-2 text-xs"><ExternalLink size={13} /> Setup Instructions</button>
           </div>
 
           <div className="glass-panel clip-tactical p-6 mb-6 animate-fade-in-up">
@@ -323,6 +337,42 @@ export function SettingsPage() {
           </div>
         </div>
       </div>
+      {showApiInstructions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowApiInstructions(false)}>
+          <div className="absolute inset-0 bg-ink-950/85 backdrop-blur-sm" />
+          <div className="relative glass-panel clip-tactical-lg p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <div className="hud-label mb-1">HL GAMING · API ACCESS</div>
+                <h2 className="font-display font-bold text-2xl text-white uppercase tracking-wider">Setup Instructions</h2>
+              </div>
+              <button onClick={() => setShowApiInstructions(false)} className="p-2 text-gray-500 hover:text-white" aria-label="Close setup instructions"><X size={20} /></button>
+            </div>
+            <div className="space-y-5 font-heading text-gray-300">
+              <section>
+                <h3 className="font-bold text-white uppercase tracking-wider mb-2">1. Get your API key</h3>
+                <p className="text-sm leading-relaxed">Open the HL Gaming API dashboard, sign in to your account, and create or copy an active API key.</p>
+                <a href="https://www.hlgamingofficial.com/p/api.html" target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-neon-300 hover:text-neon-200 font-mono text-xs"><ExternalLink size={14} /> Open HL Gaming API dashboard</a>
+              </section>
+              <section>
+                <h3 className="font-bold text-white uppercase tracking-wider mb-2">2. Add it here</h3>
+                <p className="text-sm leading-relaxed">Copy the key from HL Gaming, paste it into the API key field, and click Save Key. Your key is encrypted on the server and is never shown again.</p>
+              </section>
+              <section>
+                <h3 className="font-bold text-white uppercase tracking-wider mb-2">3. Refresh schedule</h3>
+                <p className="text-sm leading-relaxed">Members with a personal key refresh once every 7 days. Members without a personal key use the shared pool and refresh once every 14 days.</p>
+              </section>
+              <section>
+                <h3 className="font-bold text-white uppercase tracking-wider mb-2">4. Important security notes</h3>
+                <p className="text-sm leading-relaxed">Do not paste your key into chat or share it with another member. Only add keys from the official HL Gaming dashboard. The application never exposes saved keys in the browser.</p>
+              </section>
+            </div>
+            <div className="mt-7 flex justify-end">
+              <button onClick={() => setShowApiInstructions(false)} className="btn-neon px-5 py-3">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { CHAT_ROLES, ROLE_LABELS } from '@/types';
 import { GridBackground, ParticleField, Vignette } from '@/components/effects/VisualEffects';
 
 export function ChatPage() {
-  const { member, members, chatMessages, typingUsers, sendChatMessage, sendChatTyping, markChatMessagesSeen, deleteChatMessage, notificationPermission, requestNotifications, unreadChatCount } = useAuth();
+  const { member, members, chatMessages, typingUsers, sendChatMessage, sendChatTyping, markChatMessagesSeen, deleteChatMessage, notificationPermission, requestNotifications, unreadChatCount, guildSettings } = useAuth();
   const [draft, setDraft] = useState('');
   const [channelOpen, setChannelOpen] = useState(false);
   const [activeChannel, setActiveChannel] = useState<'group' | 'dm'>('group');
@@ -220,7 +220,7 @@ export function ChatPage() {
             </button>
             {activeChannel === 'dm' && showDmReminder && <div className="mb-3 flex items-center justify-between gap-3 border border-neon-500/30 bg-neon-500/10 px-3 py-2 font-heading text-sm text-gray-300">
               <span>Install the Discord app and join the server to unlock guild chat.</span>
-              <a href="https://discord.com/oauth2/authorize?client_id=1546098098575511603" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-neon-300 whitespace-nowrap"><ExternalLink size={14} /> Install</a>
+              <a href={guildSettings.discordServerUrl || import.meta.env.VITE_DISCORD_SERVER_URL || 'https://discord.gg/78bscsw4Yr'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-neon-300 whitespace-nowrap"><ExternalLink size={14} /> Join Server</a>
             </div>}
             <div className="h-[min(60vh,560px)] overflow-y-auto py-5 space-y-3">
               {visibleMessages.length === 0 && (

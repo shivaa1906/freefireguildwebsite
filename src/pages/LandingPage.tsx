@@ -55,7 +55,7 @@ export function LandingPage() {
         <div className="flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           {authError === 'not_in_guild' && <div className="max-w-md border border-alert-500/40 bg-alert-500/10 px-4 py-3 text-center font-heading text-sm text-alert-300 clip-tactical">
             Join the Discord server first, then log in again.
-            <a href="https://discord.com/oauth2/authorize?client_id=1546098098575511603" target="_blank" rel="noreferrer" className="block mt-2 text-neon-300 hover:text-neon-200 underline">Install Discord App</a>
+            <a href={guildSettings.discordServerUrl || import.meta.env.VITE_DISCORD_SERVER_URL || 'https://discord.gg/78bscsw4Yr'} target="_blank" rel="noreferrer" className="block mt-2 text-neon-300 hover:text-neon-200 underline">Join Discord Server</a>
           </div>}
           <button
             onClick={login}

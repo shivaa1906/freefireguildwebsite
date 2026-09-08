@@ -103,6 +103,15 @@ MONGODB_URI_2=mongodb+srv://RANKING_USER:RANKING_PASSWORD@RANKING_CLUSTER.mongod
 RANKING_MONGODB_DB=free_fire_rankings
 MONGODB_URI_3=mongodb+srv://CHAT_USER:CHAT_PASSWORD@CHAT_CLUSTER.mongodb.net/?retryWrites=true&w=majority
 CHAT_MONGODB_DB=free_fire_chat
+HLGAMING_STATS_API_URL=https://proapis.hlgamingofficial.com/main/games/freefire/stats/api
+HLGAMING_ACCOUNT_API_URL=https://proapis.hlgamingofficial.com/main/games/freefire/account/api
+HLGAMING_USER_UID=your_hl_gaming_developer_uid
+HLGAMING_API_KEY=your_hl_gaming_api_key
+HLGAMING_GUILD_API_KEY=your_separate_guild_owner_api_key
+HLGAMING_MEMBER_API_KEY_1=your_member_pool_api_key_1
+HLGAMING_MEMBER_API_KEY_2=your_member_pool_api_key_2
+HLGAMING_MAX_MEMBER_REFRESHES_PER_KEY=10
+HLGAMING_REGION=ind
 API_PORT=3001
 
 APP_URL=http://localhost:5173
@@ -113,6 +122,10 @@ DISCORD_ADMIN_IDS=your_discord_user_id
 ```
 
 `MONGODB_URI`, `MONGODB_URI_2`, `MONGODB_URI_3`, `DISCORD_CLIENT_SECRET`, `RANKING_MONGODB_DB`, and `CHAT_MONGODB_DB` are server-only values. Ranking tasks and score awards use `MONGODB_URI_2`; chat messages use `MONGODB_URI_3`. Both can belong to separate MongoDB accounts or clusters. Never prefix server values with `VITE_`, commit secrets, or expose them in frontend code.
+
+HL Gaming data is refreshed on Monday at 04:00 Asia/Kolkata time. `HLGAMING_GUILD_API_KEY` is used for the guild owner/profile. The two member pool keys are reserved only for approved acting leaders (`coadmin`), elders (`moderator`), and guild members (`member`); they are never used for other roles. Members can add a personal key from Settings; the key is validated before storage, encrypted server-side, and stored in the ranking database. A personal key is preferred for that member and can be used regardless of role. Invalid keys are not stored, provider-rejected keys are removed, and keys with no successful use for 30 days are deleted. `HLGAMING_MAX_MEMBER_REFRESHES_PER_KEY` limits the scheduled workload per shared key so provider quotas are not intentionally exceeded. Cached results are stored in the primary guild database collection `free_fire_stats` and displayed read-only. Obtain HL Gaming credentials from their [API dashboard](https://www.hlgamingofficial.com/p/api.html), and confirm their terms and limits before production use; this is a third-party provider, not a Garena API.
+
+A single 512 MB MongoDB database is enough for the cached stats collection for a normal guild. At an intentionally conservative 100 KB per member, it can hold roughly 5,000 cached member records; keeping chat and profile images in separate storage leaves substantially more room. You do not need one database per member. Add another database only when your provider quota, chat volume, backups, or total application data requires it.
 
 If the MongoDB password contains characters such as `@`, `#`, `/`, `:`, or spaces, URL-encode the password before placing it in the connection string.
 
@@ -129,6 +142,20 @@ Open:
 ```text
 http://localhost:5173
 ```
+
+## Deploy With Netlify and Render
+
+Deploy the Express API to Render and the Vite frontend to Netlify.
+
+1. Push this repository to GitHub.
+2. In Render, create a Blueprint from the repository. The existing `render.yaml` creates the `free-fire-guild-api` web service.
+3. In Render, set every `sync: false` value from `render.yaml`, including `APP_URL`. Set `APP_URL` to the final Netlify URL, for example `https://your-site.netlify.app`.
+4. Set `DISCORD_REDIRECT_URI` to `https://free-fire-guild-api.onrender.com/auth/discord/callback` and add that exact URL in Discord Developer Portal -> OAuth2 -> Redirects.
+5. In Netlify, import the same repository. Netlify uses `netlify.toml`, runs `npm run build`, and publishes `dist`.
+6. In Netlify environment variables, set `VITE_BACKEND_URL` to the Render API URL, for example `https://free-fire-guild-api.onrender.com`.
+7. Redeploy both services after setting the URLs. Test login, API health at `/api/health`, Discord OAuth, and WebSocket chat.
+
+Keep server secrets only in Render. `VITE_BACKEND_URL` is public configuration and is safe to expose in the frontend bundle.
 
 You can also start them separately:
 

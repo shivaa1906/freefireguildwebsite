@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { EMPTY_MEMBER_STATS, type GuildMember } from '@/types';
 import { ROLE_LABELS, ROLE_COLORS } from '@/types';
 import { GridBackground, ParticleField, ScanLines, Vignette, HudCorners } from '@/components/effects/VisualEffects';
-import { ArrowLeft, Award, Shield, Zap, Target, Skull, Star, ExternalLink, Download, X } from 'lucide-react';
+import { ArrowLeft, Award, Shield, Trophy, Zap, Target, Skull, Star, ExternalLink, Download, X } from 'lucide-react';
 
 interface MemberProfileProps {
   member: GuildMember;
@@ -126,10 +126,6 @@ export function MemberProfile({ member, onBack, overlay = false }: MemberProfile
                   <div>ID: #{member.discordId}</div>
                   <div>STATUS: <span className={getPresenceColor(member.presence)}>{getPresenceLabel(member.presence)}</span></div>
                 </div>
-                <div className="absolute top-4 right-4 px-3 py-1 bg-ink-900/80 border border-neon-500/30 font-mono text-xs text-neon-300 uppercase">
-                  {member.rank}
-                </div>
-
                 {/* Bottom info */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-ink-900 via-ink-900/80 to-transparent">
                   <div className={`font-heading font-bold text-2xl uppercase tracking-wider ${ROLE_COLORS[member.role]}`}>
@@ -167,12 +163,19 @@ export function MemberProfile({ member, onBack, overlay = false }: MemberProfile
                   </div>
                   <a href={`https://discord.com/users/${member.discordId}`} target="_blank" rel="noreferrer" className="btn-outline px-3 py-2 text-xs">Open</a>
                 </div>
+                <div className="mt-4 border-t border-ink-600/60 pt-4">
+                  <div className="font-mono text-[10px] text-gray-500 uppercase tracking-widest mb-1">Discord Bio</div>
+                  <p className="text-gray-400 font-heading text-sm leading-relaxed">{member.discordBio || member.bio || 'No Discord bio set.'}</p>
+                </div>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                 {[
                   { icon: Award, label: 'Account Level', value: stats.accountLevel.toLocaleString(), color: 'text-neon-300' },
+                  { icon: Award, label: 'Likes', value: (stats.likes ?? 0).toLocaleString(), color: 'text-neon-300' },
+                  { icon: Trophy, label: 'BR Rank', value: stats.brMaxRank ? `${stats.brMaxRank} · ${stats.brRankPoints ?? 0} pts` : 'Not available', color: 'text-warning-400' },
+                  { icon: Trophy, label: 'CS Rank', value: stats.csMaxRank ? `${stats.csMaxRank} · ${stats.csRankPoints ?? 0} pts` : 'Not available', color: 'text-warning-400' },
                   { icon: Zap, label: 'Matches', value: stats.matches.toLocaleString(), color: 'text-neon-400' },
                   { icon: Target, label: 'Win Rate', value: `${stats.winRate}%`, color: 'text-success-400' },
                   { icon: Skull, label: 'Eliminations', value: stats.eliminations.toLocaleString(), color: 'text-alert-400' },

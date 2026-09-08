@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth, type AppView } from '@/context/AuthContext';
-import { Home, Users, Shirt, Trophy, Megaphone, User, Settings, Shield, LogOut, Menu, X, MessageCircle, Medal } from 'lucide-react';
+import { Home, Users, Trophy, Megaphone, User, Settings, Shield, LogOut, Menu, X, MessageCircle, Medal, ExternalLink } from 'lucide-react';
 import { ROLE_LABELS } from '@/types';
+
+const discordServerUrl = import.meta.env.VITE_DISCORD_SERVER_URL || 'https://discord.gg/78bscsw4Yr';
 
 const NAV_ITEMS: { view: AppView; label: string; icon: typeof Home; adminOnly?: boolean; chatOnly?: boolean; rankingOnly?: boolean }[] = [
   { view: 'lobby', label: 'Home', icon: Home },
   { view: 'members', label: 'Guild Members', icon: Users },
-  { view: 'character', label: 'Character', icon: Shirt },
   { view: 'events', label: 'Guild Events', icon: Trophy },
   { view: 'ranking', label: 'Rankings', icon: Medal, rankingOnly: true },
   { view: 'announcements', label: 'Announcements', icon: Megaphone },
@@ -21,12 +22,22 @@ export function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) setProfileMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [profileMenuOpen]);
 
   const items = NAV_ITEMS.filter((item) => (!item.adminOnly || member?.role === 'admin' || member?.role === 'coadmin') && (!item.chatOnly || Boolean(member)) && (!item.rankingOnly || Boolean(member && ['admin', 'coadmin', 'moderator', 'member'].includes(member.role))));
 
@@ -78,14 +89,17 @@ export function Navigation() {
 
             {/* User badge + logout */}
             <div className="hidden xl:flex items-center gap-3 xl:mt-auto xl:pb-5">
-              <div className="relative">
+              <div ref={profileMenuRef} className="relative">
                 <button
                   onClick={() => setProfileMenuOpen((isOpen) => !isOpen)}
                   className="flex min-w-0 items-center gap-2 px-3 py-1.5 glass-panel clip-tactical hover:border-neon-500/50 transition-colors"
                   aria-expanded={profileMenuOpen}
                   aria-label={`Open profile menu for ${member?.displayName || 'Discord profile'}`}
                 >
-                <img src={member?.avatar} alt={member?.displayName || 'Discord profile'} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member?.displayName || 'Discord user')}&background=f5a623&color=111827&size=200`; }} className="w-7 h-7 rounded-full object-cover border border-neon-500/30" />
+                <span className="relative shrink-0">
+                  <img src={member?.avatar} alt={member?.displayName || 'Discord profile'} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member?.displayName || 'Discord user')}&background=f5a623&color=111827&size=200`; }} className="w-7 h-7 rounded-full object-cover border border-neon-500/30" />
+                  <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-ink-900 ${getPresenceDotColor(member?.presence)}`} title={`Discord: ${getPresenceLabel(member?.presence)}`} />
+                </span>
                 <div className="w-[120px] min-w-0 text-xs leading-tight">
                   <MarqueeText className="text-white font-heading font-semibold text-xs">{member?.displayName || 'Discord profile'}</MarqueeText>
                   <MarqueeText className="text-neon-400 font-mono text-[9px] uppercase tracking-wide">{member ? ROLE_LABELS[member.role] : ''}</MarqueeText>
@@ -97,6 +111,16 @@ export function Navigation() {
                       <div className="truncate font-heading font-semibold text-sm text-white">{member?.displayName || 'Discord profile'}</div>
                       <div className="font-mono text-[10px] uppercase tracking-wide text-neon-400">{member ? ROLE_LABELS[member.role] : ''}</div>
                     </div>
+                    <a
+                      href={guildSettings.discordServerUrl || discordServerUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left font-heading font-semibold text-sm uppercase tracking-wider text-white hover:bg-neon-500/10 transition-colors"
+                    >
+                      <ExternalLink size={16} />
+                      Join Guild Discord
+                    </a>
                     <button
                       onClick={() => { setProfileMenuOpen(false); logout(); }}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left font-heading font-semibold text-sm uppercase tracking-wider text-alert-400 hover:bg-alert-500/10 transition-colors"
@@ -160,6 +184,18 @@ export function Navigation() {
       )}
     </>
   );
+}
+
+function getPresenceDotColor(presence?: string): string {
+  if (presence === 'online') return 'bg-success-400';
+  if (presence === 'idle') return 'bg-warning-400';
+  if (presence === 'dnd') return 'bg-alert-400';
+  return 'bg-gray-500';
+}
+
+function getPresenceLabel(presence?: string): string {
+  if (presence === 'dnd') return 'Do Not Disturb';
+  return presence ? presence.charAt(0).toUpperCase() + presence.slice(1) : 'Offline';
 }
 
 function MarqueeText({ children, className }: { children: string; className: string }) {

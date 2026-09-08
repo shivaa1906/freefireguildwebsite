@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { AuthProvider, useAuth, type AppView } from '@/context/AuthContext';
 import { LandingPage } from '@/pages/LandingPage';
 import { PendingApproval } from '@/pages/PendingApproval';
@@ -7,7 +8,6 @@ import { Navigation } from '@/components/layout/Navigation';
 import { GuildLobby } from '@/pages/GuildLobby';
 import { GuildMembers } from '@/pages/GuildMembers';
 import { MemberProfile } from '@/pages/MemberProfile';
-import { CharacterCustomization } from '@/pages/CharacterCustomization';
 import { GuildEvents } from '@/pages/GuildEvents';
 import { RankingPage } from '@/pages/RankingPage';
 import { Announcements } from '@/pages/Announcements';
@@ -16,13 +16,33 @@ import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage, SettingsPage } from '@/pages/ProfileSettings';
 
 function AppContent() {
-  const { authLoading, isAuthenticated, view, setView, members } = useAuth();
-  const memberId = new URLSearchParams(window.location.search).get('member');
+  const { authLoading, isAuthenticated, view, setView, members, member } = useAuth();
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const query = new URLSearchParams(window.location.search);
+  const memberId = query.get('member');
+  const adminTab = query.get('adminTab');
   const openedMember = memberId ? members.find((item) => item.id === memberId) : null;
 
   useEffect(() => {
     if (memberId && view === 'loading') setView('members');
-  }, [memberId, setView, view]);
+    if (adminTab === 'apiKeys' && view !== 'admin') setView('admin');
+    if (view === 'character') setView('lobby');
+  }, [adminTab, memberId, setView, view]);
+
+  useEffect(() => {
+    if (!member || member.hasHlGamingApiKey) {
+      setShowApiKeyPrompt(false);
+      return;
+    }
+    const promptSessionKey = `hl-gaming-key-prompt-session:${member.id}`;
+    const promptLastShownKey = `hl-gaming-key-prompt-last-shown:${member.id}`;
+    if (window.sessionStorage.getItem(promptSessionKey) === 'shown') return;
+    const lastShownAt = Number(window.localStorage.getItem(promptLastShownKey) || 0);
+    if (Date.now() - lastShownAt < 60 * 60 * 1000) return;
+    window.sessionStorage.setItem(promptSessionKey, 'shown');
+    window.localStorage.setItem(promptLastShownKey, String(Date.now()));
+    setShowApiKeyPrompt(true);
+  }, [member]);
 
   if (authLoading) {
     return memberId ? <MemberDetailsLoading /> : <LoadingSequence onComplete={() => undefined} />;
@@ -72,13 +92,25 @@ function AppContent() {
         />
       )}
       {view === 'profile' && <ProfilePage />}
-      {view === 'character' && <CharacterCustomization />}
       {view === 'events' && <GuildEvents />}
       {view === 'ranking' && <RankingPage />}
       {view === 'announcements' && <Announcements />}
       {view === 'chat' && <ChatPage />}
       {view === 'admin' && <AdminDashboard />}
       {view === 'settings' && <SettingsPage />}
+      {showApiKeyPrompt && <div className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-2rem))] glass-panel clip-tactical p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="font-heading font-bold text-white uppercase tracking-wider">Add an HL Gaming key</div>
+            <p className="mt-2 font-mono text-xs leading-relaxed text-gray-400">Add your key for a weekly refresh. Without one, your data refreshes every two weeks using the shared pool.</p>
+          </div>
+          <button onClick={() => setShowApiKeyPrompt(false)} className="p-1 text-gray-500 hover:text-white" aria-label="Dismiss API key prompt"><X size={16} /></button>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <button onClick={() => { setShowApiKeyPrompt(false); setView('settings'); }} className="btn-neon px-3 py-2 text-xs">Add Key</button>
+          <button onClick={() => { setShowApiKeyPrompt(false); setView('settings'); }} className="btn-outline px-3 py-2 text-xs">Instructions</button>
+        </div>
+      </div>}
     </div>
   );
 }

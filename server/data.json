@@ -1,10 +1,24 @@
 {
   "settings": [
     {
-      "_id": "6a9d45e188cce36295a1427c",
       "id": "guild",
       "name": "SQRADE L4X !!",
-      "description": "A competitive Free Fire guild. Booyah or nothing."
+      "description": "A competitive Free Fire guild. Booyah or nothing.",
+      "guildOwnerUid": "2300346108",
+      "strongVerification": true
+    }
+  ],
+  "chat_messages": [
+    {
+      "id": "chat-1788868701437-35884c57",
+      "authorId": "discord_788970167907778562",
+      "authorName": "Shiva",
+      "authorRole": "admin",
+      "channel": "dm",
+      "recipientId": "discord_1444373960505688197",
+      "seenBy": [],
+      "content": "hello",
+      "createdAt": "2026-09-08T11:58:21.437Z"
     }
   ]
 }

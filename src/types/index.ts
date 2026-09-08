@@ -37,6 +37,11 @@ export interface MemberStats {
   booyahs: number;
   accountLevel: number;
   headshotRate: number;
+  likes?: number;
+  brMaxRank?: number;
+  brRankPoints?: number;
+  csMaxRank?: number;
+  csRankPoints?: number;
 }
 
 export const DEFAULT_MEMBER_STATS: MemberStats = {
@@ -65,6 +70,10 @@ export interface GuildMember {
   avatar: string;
   discordDisplayName?: string;
   discordAvatar?: string;
+  discordBio?: string;
+  discordStatus?: string;
+  freeFireUid?: string;
+  hasHlGamingApiKey?: boolean;
   role: UserRole;
   status: ApprovalStatus;
   joinDate: string;
@@ -83,9 +92,13 @@ export interface GuildMember {
 export interface JoinApplication {
   fullName: string;
   gameId: string;
+  region?: string;
   experience: string;
   imageName: string;
   acceptedTerms: boolean;
+  verificationMode?: 'recommended' | 'strong';
+  verificationCode?: string;
+  verificationProofName?: string;
 }
 
 export interface CharacterConfig {
@@ -149,6 +162,21 @@ export interface GuildSettings {
   id: 'guild';
   name: string;
   description: string;
+  discordServerUrl?: string;
+  strongVerification?: boolean;
+  guildOwnerUid?: string;
+}
+
+export interface GuildProfile {
+  guildId: string;
+  guildName: string;
+  guildLevel: number;
+  capacity: number;
+  memberCount: number;
+  ownerId: string;
+  ownerName: string;
+  region: string;
+  refreshedAt: string;
 }
 
 export interface RankingTask {
@@ -192,7 +220,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   coadmin: 'Acting Leader',
   moderator: 'Elder',
   member: 'Guild Member',
-  recruit: 'Members',
+  recruit: 'Non Guild Members',
 };
 
 export const ROLE_COLORS: Record<UserRole, string> = {

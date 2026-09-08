@@ -14,10 +14,11 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
+    host: '0.0.0.0',
     proxy: {
-      '/api': 'https://squadel4x.netlify.app/',
-      '/auth': 'https://squadel4x.netlify.app/',
-      '/ws': { target: 'ws://localhost:3001', ws: true },
+      '/api': 'http://127.0.0.1:3001',
+      '/auth': 'http://127.0.0.1:3001',
+      '/ws': { target: 'ws://127.0.0.1:3001', ws: true, changeOrigin: true },
     },
   },
 });

@@ -4,6 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
+.auto-reminder-saved .fixed.z-\[60\] .btn-neon {
+  color: transparent;
+  position: relative;
+}
+
+.auto-reminder-saved .fixed.z-\[60\] .btn-neon::after {
+  content: 'Saved';
+  color: #000000;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auto-reminder-saved .fixed.z-\[60\] .font-mono.text-xs.uppercase.text-success-400 {
+  font-size: 0;
+}
+
+.auto-reminder-saved .fixed.z-\[60\] .font-mono.text-xs.uppercase.text-success-400::after {
+  content: 'Settings saved';
+  font-size: 0.75rem;
+}
+
 @layer base {
   * {
     @apply border-ink-600;
@@ -47,6 +71,12 @@
 
   .theme-bright {
     color-scheme: light;
+  }
+
+  .theme-switching *,
+  .theme-switching *::before,
+  .theme-switching *::after {
+    transition: none !important;
   }
 
   .theme-bright body {
@@ -96,6 +126,10 @@
 
   .theme-bright .text-tactical-300 {
     color: #526277;
+  }
+
+  .theme-bright .text-tactical-200 {
+    color: #334155;
   }
 
   .theme-bright .text-tactical-400 {

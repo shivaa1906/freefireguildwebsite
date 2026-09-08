@@ -1,0 +1,527 @@
+- generic [ref=f8e2]:
+  - generic [ref=f8e3]:
+    - link "Skip to content" [ref=f8e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=f8e9]:
+      - heading "Navigation Menu" [level=2] [ref=f8e10]
+      - generic [ref=f8e12]:
+        - button "Toggle navigation" [ref=f8e14] [cursor=pointer]
+        - link "Homepage" [ref=f8e18] [cursor=pointer]:
+          - /url: /
+        - generic [ref=f8e21]:
+          - link "Sign in" [ref=f8e22] [cursor=pointer]:
+            - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+          - button "Appearance settings" [ref=f8e25] [cursor=pointer]
+  - main [ref=f8e31]:
+    - generic [ref=f8e34]:
+      - heading "repositories Search Results · free fire api player stats" [level=1] [ref=f8e35]
+      - generic [ref=f8e38]:
+        - generic [ref=f8e39]:
+          - generic [ref=f8e40]:
+            - heading "Filter by" [level=2] [ref=f8e41]
+            - list "Filter by" [ref=f8e46]:
+              - listitem [ref=f8e47]:
+                - list [ref=f8e48]:
+                  - listitem [ref=f8e49]:
+                    - link "Code (...) results" [ref=f8e50] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats&type=code
+                      - generic [ref=f8e51]:
+                        - generic [ref=f8e52]: Code
+                        - generic:
+                          - generic [aria-hidden]: ...
+                          - generic: (...)
+                          - generic: results
+                  - listitem [ref=f8e53]:
+                    - link "Repositories (10) results" [ref=f8e54] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats&type=repositories
+                      - generic [ref=f8e55]:
+                        - generic [ref=f8e56]: Repositories
+                        - generic:
+                          - generic [aria-hidden]: "10"
+                          - generic: (10)
+                          - generic: results
+                  - listitem [ref=f8e57]:
+                    - link "Issues results" [ref=f8e58] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats&type=issues
+                      - generic [ref=f8e59]:
+                        - generic [ref=f8e60]: Issues
+                        - generic: results
+                  - listitem [ref=f8e61]:
+                    - link "Pull requests results" [ref=f8e62] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats&type=pullrequests
+                      - generic [ref=f8e63]:
+                        - generic [ref=f8e64]: Pull requests
+                        - generic: results
+                  - listitem [ref=f8e65]:
+                    - link "Discussions results" [ref=f8e66] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats&type=discussions
+                      - generic [ref=f8e67]:
+                        - generic [ref=f8e68]: Discussions
+                        - generic: results
+                  - listitem [ref=f8e69]:
+                    - link "Users results" [ref=f8e70] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats&type=users
+                      - generic [ref=f8e71]:
+                        - generic [ref=f8e72]: Users
+                        - generic: results
+                  - listitem [ref=f8e73]:
+                    - button "More" [ref=f8e74] [cursor=pointer]
+              - listitem [ref=f8e77]:
+                - heading "Languages" [level=3] [ref=f8e79]
+                - list "Languages" [ref=f8e80]:
+                  - listitem [ref=f8e81]:
+                    - link "Python" [ref=f8e82] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats+language%3APython&type=repositories
+                      - generic "Python" [ref=f8e86]
+                  - listitem [ref=f8e87]:
+                    - link "Java" [ref=f8e88] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats+language%3AJava&type=repositories
+                      - generic "Java" [ref=f8e92]
+                  - listitem [ref=f8e93]:
+                    - link "JavaScript" [ref=f8e94] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats+language%3AJavaScript&type=repositories
+                      - generic "JavaScript" [ref=f8e98]
+                  - listitem [ref=f8e99]:
+                    - button "More languages..." [ref=f8e100] [cursor=pointer]:
+                      - generic "More languages..." [ref=f8e103]
+                  - listitem [aria-hidden] [ref=f8e104]
+              - listitem [ref=f8e105]:
+                - heading "Advanced" [level=3] [ref=f8e107]
+                - list "Advanced" [ref=f8e108]:
+                  - listitem [ref=f8e109]:
+                    - button "Owner" [ref=f8e110] [cursor=pointer]:
+                      - generic "Owner" [ref=f8e114]
+                  - listitem [ref=f8e115]:
+                    - button "Size" [ref=f8e116] [cursor=pointer]:
+                      - generic "Size" [ref=f8e120]
+                  - listitem [ref=f8e121]:
+                    - button "Number of followers" [ref=f8e122] [cursor=pointer]:
+                      - generic "Number of followers" [ref=f8e126]
+                  - listitem [ref=f8e127]:
+                    - button "Number of forks" [ref=f8e128] [cursor=pointer]:
+                      - generic "Number of forks" [ref=f8e132]
+                  - listitem [ref=f8e133]:
+                    - button "Number of stars" [ref=f8e134] [cursor=pointer]:
+                      - generic "Number of stars" [ref=f8e138]
+                  - listitem [ref=f8e139]:
+                    - button "Date created" [ref=f8e140] [cursor=pointer]:
+                      - generic "Date created" [ref=f8e144]
+                  - listitem [ref=f8e145]:
+                    - button "Date pushed" [ref=f8e146] [cursor=pointer]:
+                      - generic "Date pushed" [ref=f8e150]
+                  - listitem [ref=f8e151]:
+                    - button "Topic" [ref=f8e152] [cursor=pointer]:
+                      - generic "Topic" [ref=f8e156]
+                  - listitem [ref=f8e157]:
+                    - button "License" [ref=f8e158] [cursor=pointer]:
+                      - generic "License" [ref=f8e162]
+                  - listitem [ref=f8e163]:
+                    - button "Archived" [ref=f8e164] [cursor=pointer]:
+                      - generic "Archived" [ref=f8e168]
+                  - listitem [ref=f8e169]:
+                    - link "Public" [ref=f8e170] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats+is%3Apublic&type=repositories
+                      - generic "Public" [ref=f8e174]
+                  - listitem [ref=f8e175]:
+                    - link "Private" [ref=f8e176] [cursor=pointer]:
+                      - /url: https://github.com/search?q=free+fire+api+player+stats+is%3Aprivate&type=repositories
+                      - generic "Private" [ref=f8e180]
+              - listitem [aria-hidden] [ref=f8e181]
+              - listitem [ref=f8e182]:
+                - link "Advanced search" [ref=f8e183] [cursor=pointer]:
+                  - /url: /search/advanced
+          - slider "Draggable pane splitter" [ref=f8e187]
+        - generic [ref=f8e191]:
+          - generic [ref=f8e193]:
+            - generic [ref=f8e194]:
+              - generic [ref=f8e195]:
+                - generic [ref=f8e196]: 10 results
+                - generic [ref=f8e197]: (145 ms)
+              - heading "10 results" [level=2] [ref=f8e198]
+            - generic [ref=f8e199]:
+              - 'button "Sort by: Best match" [ref=f8e201] [cursor=pointer]'
+              - button "Open column options" [ref=f8e205] [cursor=pointer]
+          - generic [ref=f8e210]:
+            - generic [ref=f8e212]:
+              - generic [ref=f8e213]:
+                - heading "jinix6/free-ff-api" [level=3] [ref=f8e214]:
+                  - link [ref=f8e218] [cursor=pointer]:
+                    - /url: /jinix6/free-ff-api
+                    - generic [ref=f8e219]:
+                      - text: jinix6/
+                      - emphasis [ref=f8e220]: free
+                      - text: "-ff-"
+                      - emphasis [ref=f8e221]: api
+                - generic [ref=f8e223]:
+                  - img ":octocat:" [ref=f8e224]
+                  - emphasis [ref=f8e225]: Free
+                  - emphasis [ref=f8e226]: Fire
+                  - emphasis [ref=f8e227]: API
+                  - text: ": Get game data and"
+                  - emphasis [ref=f8e228]: player
+                  - emphasis [ref=f8e229]: stats
+                  - text: (
+                  - emphasis [ref=f8e230]: free
+                  - text: )
+                - generic [ref=f8e231]:
+                  - link "free-api" [ref=f8e233] [cursor=pointer]:
+                    - /url: /topics/free-api
+                  - link "freefire-api" [ref=f8e235] [cursor=pointer]:
+                    - /url: /topics/freefire-api
+                  - link "free-fire-api" [ref=f8e237] [cursor=pointer]:
+                    - /url: /topics/free-fire-api
+                  - link "ff-api" [ref=f8e239] [cursor=pointer]:
+                    - /url: /topics/ff-api
+                  - link "garena-ff-api" [ref=f8e241] [cursor=pointer]:
+                    - /url: /topics/garena-ff-api
+                - list [ref=f8e242]:
+                  - listitem [ref=f8e243]:
+                    - link "107 stars" [ref=f8e244] [cursor=pointer]:
+                      - /url: /jinix6/free-ff-api/stargazers
+                      - generic [ref=f8e247]: "107"
+                  - generic [aria-hidden] [ref=f8e248]: ·
+                  - listitem [ref=f8e249]:
+                    - generic [ref=f8e250]:
+                      - text: Updated
+                      - generic "May 31, 2025, 1:39 AM UTC" [ref=f8e251]: on May 31, 2025
+              - link "Star" [ref=f8e254] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e258]:
+              - generic [ref=f8e259]:
+                - heading "nayem4311/FreeFire-API" [level=3] [ref=f8e260]:
+                  - link [ref=f8e264] [cursor=pointer]:
+                    - /url: /nayem4311/FreeFire-API
+                    - generic [ref=f8e265]:
+                      - text: nayem4311/
+                      - emphasis [ref=f8e266]: FreeFire
+                      - text: "-"
+                      - emphasis [ref=f8e267]: API
+                - generic [ref=f8e269]:
+                  - emphasis [ref=f8e270]: Free
+                  - emphasis [ref=f8e271]: Fire
+                  - emphasis [ref=f8e272]: API
+                  - text: ": Get game data and"
+                  - emphasis [ref=f8e273]: player
+                  - emphasis [ref=f8e274]: stats
+                - list [ref=f8e275]:
+                  - listitem [ref=f8e276]:
+                    - link "12 stars" [ref=f8e277] [cursor=pointer]:
+                      - /url: /nayem4311/FreeFire-API/stargazers
+                      - generic [ref=f8e280]: "12"
+                  - generic [aria-hidden] [ref=f8e281]: ·
+                  - listitem [ref=f8e282]:
+                    - generic [ref=f8e283]:
+                      - text: Updated
+                      - generic "Jan 20, 2026, 3:49 PM UTC" [ref=f8e284]: on Jan 20
+              - link "Star" [ref=f8e287] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e291]:
+              - generic [ref=f8e292]:
+                - heading "haroonbrokha1/Free-Fire-Account-Info-And-Stats-API" [level=3] [ref=f8e293]:
+                  - link [ref=f8e297] [cursor=pointer]:
+                    - /url: /haroonbrokha1/Free-Fire-Account-Info-And-Stats-API
+                    - generic [ref=f8e298]:
+                      - text: haroonbrokha1/
+                      - emphasis [ref=f8e299]: Free
+                      - text: "-"
+                      - emphasis [ref=f8e300]: Fire
+                      - text: "-Account-Info-And-"
+                      - emphasis [ref=f8e301]: Stats
+                      - text: "-"
+                      - emphasis [ref=f8e302]: API
+                - generic [ref=f8e304]:
+                  - text: A fast, secure, and easy-to-use RESTful JSON
+                  - emphasis [ref=f8e305]: API
+                  - text: for accessing
+                  - emphasis [ref=f8e306]: Free
+                  - emphasis [ref=f8e307]: Fire
+                  - text: account data across 14+ regions. The HL Gaming Official
+                  - emphasis [ref=f8e308]: Free
+                  - emphasis [ref=f8e309]: Fire
+                  - emphasis [ref=f8e310]: …
+                - generic [ref=f8e311]:
+                  - link "api" [ref=f8e313] [cursor=pointer]:
+                    - /url: /topics/api
+                  - link "restful-api" [ref=f8e315] [cursor=pointer]:
+                    - /url: /topics/restful-api
+                  - link "garena" [ref=f8e317] [cursor=pointer]:
+                    - /url: /topics/garena
+                  - link "freefire" [ref=f8e319] [cursor=pointer]:
+                    - /url: /topics/freefire
+                  - link "freefire-api" [ref=f8e321] [cursor=pointer]:
+                    - /url: /topics/freefire-api
+                - list [ref=f8e322]:
+                  - listitem [ref=f8e323]:
+                    - link "15 stars" [ref=f8e324] [cursor=pointer]:
+                      - /url: /haroonbrokha1/Free-Fire-Account-Info-And-Stats-API/stargazers
+                      - generic [ref=f8e327]: "15"
+                  - generic [aria-hidden] [ref=f8e328]: ·
+                  - listitem [ref=f8e329]:
+                    - generic [ref=f8e330]:
+                      - text: Updated
+                      - generic "Oct 14, 2025, 6:38 AM UTC" [ref=f8e331]: on Oct 14, 2025
+              - link "Star" [ref=f8e334] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e338]:
+              - generic [ref=f8e339]:
+                - heading "lkteam-gm/Free-Fire-API----FREE" [level=3] [ref=f8e340]:
+                  - link [ref=f8e344] [cursor=pointer]:
+                    - /url: /lkteam-gm/Free-Fire-API----FREE
+                    - generic [ref=f8e345]:
+                      - text: lkteam-gm/
+                      - emphasis [ref=f8e346]: Free
+                      - text: "-"
+                      - emphasis [ref=f8e347]: Fire
+                      - text: "-"
+                      - emphasis [ref=f8e348]: API
+                      - text: "----"
+                      - emphasis [ref=f8e349]: FREE
+                - generic [ref=f8e351]:
+                  - text: 🔥 Unofficial
+                  - emphasis [ref=f8e352]: Free
+                  - emphasis [ref=f8e353]: Fire
+                  - emphasis [ref=f8e354]: API
+                  - text: — Fetch
+                  - emphasis [ref=f8e355]: player
+                  - emphasis [ref=f8e356]: stats
+                  - text: ", profiles & search"
+                  - emphasis [ref=f8e357]: players
+                  - text: across 13+ regions. Powered by LK-TEAM.
+                - list [ref=f8e358]:
+                  - listitem [ref=f8e359]:
+                    - link "2 stars" [ref=f8e360] [cursor=pointer]:
+                      - /url: /lkteam-gm/Free-Fire-API----FREE/stargazers
+                      - generic [ref=f8e363]: "2"
+                  - generic [aria-hidden] [ref=f8e364]: ·
+                  - listitem [ref=f8e365]:
+                    - generic [ref=f8e366]:
+                      - text: Updated
+                      - generic "May 23, 2026, 3:56 AM UTC" [ref=f8e367]: on May 23
+              - link "Star" [ref=f8e370] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e374]:
+              - generic [ref=f8e375]:
+                - heading "devlil0/freefire-telegram-bot" [level=3] [ref=f8e376]:
+                  - link [ref=f8e380] [cursor=pointer]:
+                    - /url: /devlil0/freefire-telegram-bot
+                    - generic [ref=f8e381]:
+                      - text: devlil0/
+                      - emphasis [ref=f8e382]: freefire
+                      - text: "-telegram-bot"
+                - generic [ref=f8e384]:
+                  - text: 🎮 Telegram bot for
+                  - emphasis [ref=f8e385]: Free
+                  - emphasis [ref=f8e386]: Fire
+                  - text: — check ban status,
+                  - emphasis [ref=f8e387]: player
+                  - text: profiles &
+                  - emphasis [ref=f8e388]: stats
+                  - text: using public
+                  - emphasis [ref=f8e389]: APIs
+                  - text: . Built with Spring Boot & Java.
+                - generic [ref=f8e390]:
+                  - link "java" [ref=f8e392] [cursor=pointer]:
+                    - /url: /topics/java
+                  - link "bot" [ref=f8e394] [cursor=pointer]:
+                    - /url: /topics/bot
+                  - link "spring-boot" [ref=f8e396] [cursor=pointer]:
+                    - /url: /topics/spring-boot
+                  - link "telegram" [ref=f8e398] [cursor=pointer]:
+                    - /url: /topics/telegram
+                  - link "garena" [ref=f8e400] [cursor=pointer]:
+                    - /url: /topics/garena
+                - list [ref=f8e401]:
+                  - listitem [ref=f8e402]:
+                    - generic "Java language" [ref=f8e405]: Java
+                  - generic [aria-hidden] [ref=f8e406]: ·
+                  - listitem [ref=f8e407]:
+                    - link "3 stars" [ref=f8e408] [cursor=pointer]:
+                      - /url: /devlil0/freefire-telegram-bot/stargazers
+                      - generic [ref=f8e411]: "3"
+                  - generic [aria-hidden] [ref=f8e412]: ·
+                  - listitem [ref=f8e413]:
+                    - generic [ref=f8e414]:
+                      - text: Updated
+                      - generic "Apr 13, 2026, 7:07 PM UTC" [ref=f8e415]: on Apr 13
+              - link "Star" [ref=f8e418] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e422]:
+              - generic [ref=f8e423]:
+                - heading "lwprfs/freefire-player-info" [level=3] [ref=f8e424]:
+                  - link [ref=f8e428] [cursor=pointer]:
+                    - /url: /lwprfs/freefire-player-info
+                    - generic [ref=f8e429]:
+                      - text: lwprfs/freefire-
+                      - emphasis [ref=f8e430]: player
+                      - text: "-info"
+                - generic [ref=f8e432]:
+                  - text: A Python CLI tool and website for fetching and displaying detailed
+                  - emphasis [ref=f8e433]: Free
+                  - emphasis [ref=f8e434]: Fire
+                  - emphasis [ref=f8e435]: player
+                  - text: information using the GamesKinbo
+                  - emphasis [ref=f8e436]: API
+                  - text: . Get real-time
+                  - emphasis [ref=f8e437]: p…
+                - generic [ref=f8e438]:
+                  - link "api" [ref=f8e440] [cursor=pointer]:
+                    - /url: /topics/api
+                  - link "uuid" [ref=f8e442] [cursor=pointer]:
+                    - /url: /topics/uuid
+                  - link "garena" [ref=f8e444] [cursor=pointer]:
+                    - /url: /topics/garena
+                  - link "freefire" [ref=f8e446] [cursor=pointer]:
+                    - /url: /topics/freefire
+                  - link "freefire-config" [ref=f8e448] [cursor=pointer]:
+                    - /url: /topics/freefire-config
+                - list [ref=f8e449]:
+                  - listitem [ref=f8e450]:
+                    - generic "JavaScript language" [ref=f8e453]: JavaScript
+                  - generic [aria-hidden] [ref=f8e454]: ·
+                  - listitem [ref=f8e455]:
+                    - link "3 stars" [ref=f8e456] [cursor=pointer]:
+                      - /url: /lwprfs/freefire-player-info/stargazers
+                      - generic [ref=f8e459]: "3"
+                  - generic [aria-hidden] [ref=f8e460]: ·
+                  - listitem [ref=f8e461]:
+                    - generic [ref=f8e462]:
+                      - text: Updated
+                      - generic "Aug 26, 2026, 5:41 AM UTC" [ref=f8e463]: 13 days ago
+              - link "Star" [ref=f8e466] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e470]:
+              - generic [ref=f8e471]:
+                - heading "DK3MK/FreeFire-API" [level=3] [ref=f8e472]:
+                  - link [ref=f8e476] [cursor=pointer]:
+                    - /url: /DK3MK/FreeFire-API
+                    - generic [ref=f8e477]:
+                      - text: DK3MK/
+                      - emphasis [ref=f8e478]: FreeFire
+                      - text: "-"
+                      - emphasis [ref=f8e479]: API
+                - generic [ref=f8e481]:
+                  - emphasis [ref=f8e482]: Free
+                  - emphasis [ref=f8e483]: Fire
+                  - emphasis [ref=f8e484]: API
+                  - text: ": Get game data and"
+                  - emphasis [ref=f8e485]: player
+                  - emphasis [ref=f8e486]: stats
+                  - text: (
+                  - emphasis [ref=f8e487]: free
+                  - text: )
+                - list [ref=f8e488]:
+                  - listitem [ref=f8e489]:
+                    - link "0 stars" [ref=f8e490] [cursor=pointer]:
+                      - /url: /DK3MK/FreeFire-API/stargazers
+                      - generic [ref=f8e493]: "0"
+                  - generic [aria-hidden] [ref=f8e494]: ·
+                  - listitem [ref=f8e495]:
+                    - generic [ref=f8e496]:
+                      - text: Updated
+                      - generic "Aug 23, 2025, 3:48 AM UTC" [ref=f8e497]: on Aug 23, 2025
+              - link "Star" [ref=f8e500] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e504]:
+              - generic [ref=f8e505]:
+                - heading "Ibrahim404-cyber/Free-Fire-UID-to-INFO" [level=3] [ref=f8e506]:
+                  - link [ref=f8e510] [cursor=pointer]:
+                    - /url: /Ibrahim404-cyber/Free-Fire-UID-to-INFO
+                    - generic [ref=f8e511]:
+                      - text: Ibrahim404-cyber/
+                      - emphasis [ref=f8e512]: Free
+                      - text: "-"
+                      - emphasis [ref=f8e513]: Fire
+                      - text: "-UID-to-INFO"
+                - generic [ref=f8e515]:
+                  - emphasis [ref=f8e516]: Free
+                  - emphasis [ref=f8e517]: Fire
+                  - text: UID to INFO - Extract
+                  - emphasis [ref=f8e518]: player
+                  - emphasis [ref=f8e519]: stats
+                  - text: ", ranks, guild & pet data from any FF UID. Python + GameSkinbo"
+                  - emphasis [ref=f8e520]: API
+                  - text: .
+                - list [ref=f8e521]:
+                  - listitem [ref=f8e522]:
+                    - generic "Python language" [ref=f8e525]: Python
+                  - generic [aria-hidden] [ref=f8e526]: ·
+                  - listitem [ref=f8e527]:
+                    - link "0 stars" [ref=f8e528] [cursor=pointer]:
+                      - /url: /Ibrahim404-cyber/Free-Fire-UID-to-INFO/stargazers
+                      - generic [ref=f8e531]: "0"
+                  - generic [aria-hidden] [ref=f8e532]: ·
+                  - listitem [ref=f8e533]:
+                    - generic [ref=f8e534]:
+                      - text: Updated
+                      - generic "Jun 12, 2026, 2:21 PM UTC" [ref=f8e535]: on Jun 12
+              - link "Star" [ref=f8e538] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e542]:
+              - generic [ref=f8e543]:
+                - heading "ibr4himkh4lil/Free-Fire-UID-to-INFO" [level=3] [ref=f8e544]:
+                  - link [ref=f8e548] [cursor=pointer]:
+                    - /url: /ibr4himkh4lil/Free-Fire-UID-to-INFO
+                    - generic [ref=f8e549]:
+                      - text: ibr4himkh4lil/
+                      - emphasis [ref=f8e550]: Free
+                      - text: "-"
+                      - emphasis [ref=f8e551]: Fire
+                      - text: "-UID-to-INFO"
+                - generic [ref=f8e553]:
+                  - emphasis [ref=f8e554]: Free
+                  - emphasis [ref=f8e555]: Fire
+                  - text: UID to INFO - Extract
+                  - emphasis [ref=f8e556]: player
+                  - emphasis [ref=f8e557]: stats
+                  - text: ", ranks, guild & pet data from any FF UID. Python + GameSkinbo"
+                  - emphasis [ref=f8e558]: API
+                  - text: .
+                - list [ref=f8e559]:
+                  - listitem [ref=f8e560]:
+                    - generic "Python language" [ref=f8e563]: Python
+                  - generic [aria-hidden] [ref=f8e564]: ·
+                  - listitem [ref=f8e565]:
+                    - link "1 stars" [ref=f8e566] [cursor=pointer]:
+                      - /url: /ibr4himkh4lil/Free-Fire-UID-to-INFO/stargazers
+                      - generic [ref=f8e569]: "1"
+                  - generic [aria-hidden] [ref=f8e570]: ·
+                  - listitem [ref=f8e571]:
+                    - generic [ref=f8e572]:
+                      - text: Updated
+                      - generic "Jun 12, 2026, 1:40 PM UTC" [ref=f8e573]: on Jun 12
+              - link "Star" [ref=f8e576] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+            - generic [ref=f8e580]:
+              - generic [ref=f8e581]:
+                - heading "Ronald106/Surviv.io" [level=3] [ref=f8e582]:
+                  - link "Ronald106/Surviv.io" [ref=f8e586] [cursor=pointer]:
+                    - /url: /Ronald106/Surviv.io
+                - generic [ref=f8e588]:
+                  - text: Teammate</a> <a class='menu-option btn-darken' id='btn-spectate-prev-
+                  - emphasis [ref=f8e589]: player
+                  - text: "' data-l10n='game-previous-teammate'>Previous Teammate</a> <a…"
+                - list [ref=f8e590]:
+                  - listitem [ref=f8e591]:
+                    - link "52 stars" [ref=f8e592] [cursor=pointer]:
+                      - /url: /Ronald106/Surviv.io/stargazers
+                      - generic [ref=f8e595]: "52"
+                  - generic [aria-hidden] [ref=f8e596]: ·
+                  - listitem [ref=f8e597]:
+                    - generic [ref=f8e598]:
+                      - text: Updated
+                      - generic "Mar 8, 2020, 4:29 PM UTC" [ref=f8e599]: on Mar 8, 2020
+              - link "Star" [ref=f8e602] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fsearch%3Fq%3Dfree%2Bfire%2Bapi%2Bplayer%2Bstats%26type%3Drepositories
+          - generic [ref=f8e607]:
+            - generic [ref=f8e608]:
+              - img "Package icon" [ref=f8e610]
+              - heading "Sponsor open source projects you depend on" [level=2] [ref=f8e611]
+              - generic [ref=f8e612]: Contributors are working behind the scenes to make open source better for everyone—give them the help and recognition they deserve.
+              - link "Explore sponsorable projects" [ref=f8e613] [cursor=pointer]:
+                - /url: https://github.com/sponsors/explore
+            - generic [ref=f8e616]:
+              - generic [ref=f8e617]: ProTip!
+              - generic [ref=f8e620]:
+                - text: Press the
+                - generic [ref=f8e621]: /
+                - text: key to activate the search input again and adjust your query.

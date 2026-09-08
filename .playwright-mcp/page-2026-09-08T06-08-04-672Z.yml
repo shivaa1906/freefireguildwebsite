@@ -1,0 +1,138 @@
+- generic [active] [ref=f5e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=f5e2] [cursor=pointer]
+      - link "Accessibility help" [ref=f5e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=f5e8]:
+    - search [ref=f5e9]:
+      - generic [ref=f5e12]:
+        - link [ref=f5e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&ictx=0&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8QpYkNegQIBhAG
+          - img "Go to Google Home" [ref=f5e14]
+        - generic [ref=f5e19]:
+          - combobox "Search" [ref=f5e22]: site:rapidapi.com Free Fire API player stats site:rapidapi.com Free Fire API player stats
+          - generic [ref=f5e23]:
+            - button "Clear" [ref=f5e25] [cursor=pointer]
+            - generic [ref=f5e30]:
+              - button "Search by voice" [ref=f5e31] [cursor=pointer]
+              - button "Search by image" [ref=f5e34] [cursor=pointer]
+        - button "Search" [ref=f5e37] [cursor=pointer]
+    - generic [ref=f5e42]:
+      - button "Settings" [ref=f5e44] [cursor=pointer]
+      - button "Share" [ref=f5e50] [cursor=pointer]
+      - generic [ref=f5e56]:
+        - button "Google apps" [ref=f5e58] [cursor=pointer]
+        - link "Sign in" [ref=f5e63] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3Dsite%253Arapidapi.com%2BFree%2BFire%2BAPI%2Bplayer%2Bstats&ec=futura_srp_og_si_72236_p
+  - generic [ref=f5e66]:
+    - navigation [ref=f5e72]:
+      - generic [ref=f5e78]:
+        - list [ref=f5e79]:
+          - listitem [ref=f5e80]:
+            - link "AI Mode" [ref=f5e83] [cursor=pointer]:
+              - /url: /search?q=site:rapidapi.com+Free+Fire+API+player+stats&sca_esv=5070939f3177248e&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832VTJOOCxW_fyN-Q_ezyf8gKjm3rhh_G8jdZ2Q6tji4z8aiKudlLzJJS_1FjWWxMtgbbbrbRAQ7OpBO66Lr2Ds1McsafUA0S0HhyPHVdmHMNZhg_c8jy1fpX1eX2TmiczptaRPuf4X6KsC1UinUnnxfC5y968zqwziv5_Q5Dw_xmMxtpYMg&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8Q2J8OegQIERAD
+          - listitem [ref=f5e87]:
+            - link "All" [disabled] [ref=f5e88]
+          - listitem [ref=f5e91]:
+            - link "Images" [ref=f5e92] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=2&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832VTJOOCxW_fyN-Q_ezyf8gKjm3rhh_G8jdZ2Q6tji4z8aiKudlLzJJS_1FjWWxMtgbbbrbRAQ7OpBO66Lr2Ds1McsafUA0S0HhyPHVdmHMNZhg_c8jy1fpX1eX2TmiczptaRPuf4X6KsC1UinUnnxfC5y968zqwziv5_Q5Dw_xmMxtpYMg&q=site:rapidapi.com+Free+Fire+API+player+stats&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8QtKgLegQIFBAB
+          - listitem [ref=f5e95]:
+            - link "Videos" [ref=f5e96] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=7&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832VTJOOCxW_fyN-Q_ezyf8gKjm3rhh_G8jdZ2Q6tji4z8aiKudlLzJJS_1FjWWxMtgbbbrbRAQ7OpBO66Lr2Ds1McsafUA0S0HhyPHVdmHMNZhg_c8jy1fpX1eX2TmiczptaRPuf4X6KsC1UinUnnxfC5y968zqwziv5_Q5Dw_xmMxtpYMg&q=site:rapidapi.com+Free+Fire+API+player+stats&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8QtKgLegQIExAB
+          - listitem [ref=f5e99]:
+            - link "News" [ref=f5e100] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&q=site:rapidapi.com+Free+Fire+API+player+stats&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832VTJOOCxW_fyN-Q_ezyf8gKjm3rhh_G8jdZ2Q6tji4z8aiKudlLzJJS_1FjWWxMtgbbbrbRAQ7OpBO66Lr2Ds1McsafUA0S0HhyPHVdmHMNZhg_c8jy1fpX1eX2TmiczptaRPuf4X6KsC1UinUnnxfC5y968zqwziv5_Q5Dw_xmMxtpYMg&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8Q0pQJegQIFhAB
+          - listitem [ref=f5e103]:
+            - link "Forums" [ref=f5e104] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=18&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832VTJOOCxW_fyN-Q_ezyf8gKjm3rhh_G8jdZ2Q6tji4z8aiKudlLzJJS_1FjWWxMtgbbbrbRAQ7OpBO66Lr2Ds1McsafUA0S0HhyPHVdmHMNZhg_c8jy1fpX1eX2TmiczptaRPuf4X6KsC1UinUnnxfC5y968zqwziv5_Q5Dw_xmMxtpYMg&q=site:rapidapi.com+Free+Fire+API+player+stats&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8Qs6gLegQIFxAB
+          - listitem [ref=f5e107]:
+            - link "Short videos" [ref=f5e108] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8c4u0nXx4bEIpwm1lnNH832VTJOOCxW_fyN-Q_ezyf8gKjm3rhh_G8jdZ2Q6tji4z8aiKudlLzJJS_1FjWWxMtgbbbrbRAQ7OpBO66Lr2Ds1McsafUA0S0HhyPHVdmHMNZhg_c8jy1fpX1eX2TmiczptaRPuf4X6KsC1UinUnnxfC5y968zqwziv5_Q5Dw_xmMxtpYMg&q=site:rapidapi.com+Free+Fire+API+player+stats&sa=X&ved=2ahUKEwjAkOL1qN6WAxV-iuEIHUSnFC8Qs6gLegQIFRAB
+          - listitem [ref=f5e111]:
+            - button [ref=f5e112] [cursor=pointer]:
+              - generic "More filters" [ref=f5e113]: More
+        - button "Tools" [ref=f5e120] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=f5e127]
+    - main [ref=f5e133]:
+      - generic [ref=f5e137]:
+        - generic [ref=f5e140]:
+          - heading "Web results" [level=2] [ref=f5e141]
+          - generic [ref=f5e142]:
+            - generic [ref=f5e145]:
+              - link "Gaming RapidAPI https://rapidapi.com › search › Gaming" [ref=f5e147] [cursor=pointer]:
+                - /url: /goto?url=CAESWgHrOzAVeJ2eejTVy4rtu8dmFN6tvBZ5jOEYzvY4uYc_VApaNHYH8CWV6CN9RsZhekBPTYcarIF1BU0k5zSXJ52k_vgYFRo4csQ4U4L1aDIh49Glw5p-VB9E4A
+                - heading "Gaming" [level=3] [ref=f5e148]
+                - generic [ref=f5e154]:
+                  - generic [ref=f5e155]: RapidAPI
+                  - generic [ref=f5e157]: https://rapidapi.com › search › Gaming
+              - button "About this result" [ref=f5e163] [cursor=pointer]
+            - generic [ref=f5e170]:
+              - text: Gaming APIs connect users to game servers. Ranks,
+              - emphasis [ref=f5e171]: stats
+              - text: ", news & more, provided by the fastest and most powerful"
+              - emphasis [ref=f5e172]: API
+              - text: for Rocket League. Available for
+              - emphasis [ref=f5e173]: Free Fire
+              - text: ...
+        - generic [ref=f5e177]:
+          - heading "Images" [level=2] [ref=f5e181]
+          - generic [ref=f5e185]:
+            - generic [ref=f5e189] [cursor=pointer]:
+              - link "Gaming RapidAPI" [ref=f5e190]:
+                - /url: /goto?url=CAESWgHrOzAVeJ2eejTVy4rtu8dmFN6tvBZ5jOEYzvY4uYc_VApaNHYH8CWV6CN9RsZhekBPTYcarIF1BU0k5zSXJ52k_vgYFRo4csQ4U4L1aDIh49Glw5p-VB9E4A
+              - button [ref=f5e192]:
+                - img "Gaming" [ref=f5e194]
+              - generic [ref=f5e196]:
+                - generic [ref=f5e198]: Gaming
+                - generic [ref=f5e199]:
+                  - generic [ref=f5e201]: RapidAPI
+                  - button "About this result" [ref=f5e211]
+            - generic [ref=f5e219] [cursor=pointer]:
+              - link "Gaming RapidAPI" [ref=f5e220]:
+                - /url: /goto?url=CAESWgHrOzAVeJ2eejTVy4rtu8dmFN6tvBZ5jOEYzvY4uYc_VApaNHYH8CWV6CN9RsZhekBPTYcarIF1BU0k5zSXJ52k_vgYFRo4csQ4U4L1aDIh49Glw5p-VB9E4A
+              - button [ref=f5e222]:
+                - img "Gaming" [ref=f5e224]
+              - generic [ref=f5e226]:
+                - generic [ref=f5e228]: Gaming
+                - generic [ref=f5e229]:
+                  - generic [ref=f5e231]: RapidAPI
+                  - button "About this result" [ref=f5e241]
+            - generic [ref=f5e249] [cursor=pointer]:
+              - link "Gaming RapidAPI" [ref=f5e250]:
+                - /url: /goto?url=CAESWgHrOzAVeJ2eejTVy4rtu8dmFN6tvBZ5jOEYzvY4uYc_VApaNHYH8CWV6CN9RsZhekBPTYcarIF1BU0k5zSXJ52k_vgYFRo4csQ4U4L1aDIh49Glw5p-VB9E4A
+              - button [ref=f5e252]:
+                - img "Gaming" [ref=f5e254]
+              - generic [ref=f5e256]:
+                - generic [ref=f5e258]: Gaming
+                - generic [ref=f5e259]:
+                  - generic [ref=f5e261]: RapidAPI
+                  - button "About this result" [ref=f5e271]
+          - button "Show more images" [ref=f5e277] [cursor=pointer]:
+            - separator [aria-hidden] [ref=f5e278]
+      - generic:
+        - generic:
+          - navigation
+      - navigation
+    - contentinfo [ref=f5e284]:
+      - heading "Footer links" [level=1] [ref=f5e285]
+      - generic [ref=f5e289]:
+        - generic [ref=f5e291]:
+          - text: India
+          - generic [ref=f5e293]:
+            - button "Hyderabad, Telangana - From your IP address" [ref=f5e295] [cursor=pointer]:
+              - generic [ref=f5e296]: Hyderabad, Telangana
+              - generic [ref=f5e298]:
+                - text: "-"
+                - generic [ref=f5e299]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=f5e301] [cursor=pointer]
+        - generic [ref=f5e304]:
+          - link "Help" [ref=f5e305] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=f5e306] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=f5e307] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=f5e308] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1

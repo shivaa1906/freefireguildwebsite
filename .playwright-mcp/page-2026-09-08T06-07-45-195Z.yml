@@ -1,0 +1,279 @@
+- generic [active] [ref=f2e1]:
+  - generic:
+    - generic:
+      - link "Skip to main content" [ref=f2e2] [cursor=pointer]
+      - link "Accessibility help" [ref=f2e3] [cursor=pointer]:
+        - /url: https://support.google.com/websearch/answer/181196?hl=en-IN
+  - generic [ref=f2e8]:
+    - search [ref=f2e9]:
+      - generic [ref=f2e12]:
+        - link [ref=f2e13] [cursor=pointer]:
+          - /url: https://www.google.com/webhp?hl=en&ictx=0&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44QpYkNegQIBhAG
+          - img "Go to Google Home" [ref=f2e14]
+        - generic [ref=f2e19]:
+          - combobox "Search" [ref=f2e22]: Free Fire player stats API UID documentation Free Fire player stats API UID documentation
+          - generic [ref=f2e23]:
+            - button "Clear" [ref=f2e25] [cursor=pointer]
+            - generic [ref=f2e30]:
+              - button "Search by voice" [ref=f2e31] [cursor=pointer]
+              - button "Search by image" [ref=f2e34] [cursor=pointer]
+        - button "Search" [ref=f2e37] [cursor=pointer]
+    - generic [ref=f2e42]:
+      - button "Settings" [ref=f2e44] [cursor=pointer]
+      - button "Share" [ref=f2e50] [cursor=pointer]
+      - generic [ref=f2e56]:
+        - button "Google apps" [ref=f2e58] [cursor=pointer]
+        - link "Sign in" [ref=f2e63] [cursor=pointer]:
+          - /url: https://accounts.google.com/ServiceLogin?hl=en&passive=true&continue=https://www.google.com/search%3Fq%3DFree%2BFire%2Bplayer%2Bstats%2BAPI%2BUID%2Bdocumentation%26sei%3DLqafauzIDLeN2roP8PvPmAs&ec=futura_srp_og_si_72236_p
+  - generic [ref=f2e66]:
+    - navigation [ref=f2e72]:
+      - generic [ref=f2e78]:
+        - list [ref=f2e79]:
+          - listitem [ref=f2e80]:
+            - link "AI Mode" [ref=f2e83] [cursor=pointer]:
+              - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&udm=50&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cxpBkeIeqYwoCbfNVc4vKE-Dsslc-KGKq55jF_BVsFlBETcQE9jpeDgApPlcTya2OdFbFbQFLXbDM2hOFtMzoKzxdicE7OG9Hh4a9SZLV4s-JjcxOB8wOqG01B1BALJlRQusFGimnHAcvQ46EJc7HOXej8sEAMILMlK6ITwYEtH3SOEzYGbA2PDddGiKVbpxnvnhBKw&vsint=&aep=1&ntc=1&cs=0&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q2J8OegQIExAD
+          - listitem [ref=f2e87]:
+            - link "All" [disabled] [ref=f2e88]
+          - listitem [ref=f2e91]:
+            - link "Videos" [ref=f2e92] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=7&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cxpBkeIeqYwoCbfNVc4vKE-Dsslc-KGKq55jF_BVsFlBETcQE9jpeDgApPlcTya2OdFbFbQFLXbDM2hOFtMzoKzxdicE7OG9Hh4a9SZLV4s-JjcxOB8wOqG01B1BALJlRQusFGimnHAcvQ46EJc7HOXej8sEAMILMlK6ITwYEtH3SOEzYGbA2PDddGiKVbpxnvnhBKw&q=Free+Fire+player+stats+API+UID+documentation&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44QtKgLegQIGRAB
+          - listitem [ref=f2e95]:
+            - link "Images" [ref=f2e96] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=2&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cxpBkeIeqYwoCbfNVc4vKE-Dsslc-KGKq55jF_BVsFlBETcQE9jpeDgApPlcTya2OdFbFbQFLXbDM2hOFtMzoKzxdicE7OG9Hh4a9SZLV4s-JjcxOB8wOqG01B1BALJlRQusFGimnHAcvQ46EJc7HOXej8sEAMILMlK6ITwYEtH3SOEzYGbA2PDddGiKVbpxnvnhBKw&q=Free+Fire+player+stats+API+UID+documentation&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44QtKgLegQIGBAB
+          - listitem [ref=f2e99]:
+            - link "Forums" [ref=f2e100] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=18&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cxpBkeIeqYwoCbfNVc4vKE-Dsslc-KGKq55jF_BVsFlBETcQE9jpeDgApPlcTya2OdFbFbQFLXbDM2hOFtMzoKzxdicE7OG9Hh4a9SZLV4s-JjcxOB8wOqG01B1BALJlRQusFGimnHAcvQ46EJc7HOXej8sEAMILMlK6ITwYEtH3SOEzYGbA2PDddGiKVbpxnvnhBKw&q=Free+Fire+player+stats+API+UID+documentation&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Qs6gLegQIFhAB
+          - listitem [ref=f2e103]:
+            - link "News" [ref=f2e104] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire+player+stats+API+UID+documentation&tbm=nws&source=lnms&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cxpBkeIeqYwoCbfNVc4vKE-Dsslc-KGKq55jF_BVsFlBETcQE9jpeDgApPlcTya2OdFbFbQFLXbDM2hOFtMzoKzxdicE7OG9Hh4a9SZLV4s-JjcxOB8wOqG01B1BALJlRQusFGimnHAcvQ46EJc7HOXej8sEAMILMlK6ITwYEtH3SOEzYGbA2PDddGiKVbpxnvnhBKw&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q0pQJegQIFxAB
+          - listitem [ref=f2e107]:
+            - link "Short videos" [ref=f2e108] [cursor=pointer]:
+              - /url: /search?sca_esv=5070939f3177248e&udm=39&fbs=ABfTbFVyMZGZf1hfvX9uKjN_-G8cxpBkeIeqYwoCbfNVc4vKE-Dsslc-KGKq55jF_BVsFlBETcQE9jpeDgApPlcTya2OdFbFbQFLXbDM2hOFtMzoKzxdicE7OG9Hh4a9SZLV4s-JjcxOB8wOqG01B1BALJlRQusFGimnHAcvQ46EJc7HOXej8sEAMILMlK6ITwYEtH3SOEzYGbA2PDddGiKVbpxnvnhBKw&q=Free+Fire+player+stats+API+UID+documentation&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Qs6gLegQIFRAB
+          - listitem [ref=f2e111]:
+            - button [ref=f2e112] [cursor=pointer]:
+              - generic "More filters" [ref=f2e113]: More
+        - button "Tools" [ref=f2e120] [cursor=pointer]
+    - heading "Search Results" [level=1] [ref=f2e127]
+    - generic [ref=f2e132]:
+      - generic [ref=f2e151]:
+        - heading "Searching Thinking a little longer" [level=2] [ref=f2e155]:
+          - generic [ref=f2e156]:
+            - generic [ref=f2e157]: Searching
+            - generic [ref=f2e159]: Thinking a little longer
+        - progressbar "Generating" [ref=f2e162]
+      - main [ref=f2e213]:
+        - generic [ref=f2e217]:
+          - generic [ref=f2e220]:
+            - heading "Web results" [level=2] [ref=f2e221]
+            - generic [ref=f2e222]:
+              - generic [ref=f2e225]:
+                - link "haroonbrokha1/Free-Fire-Account-Info-And-Stats-API ... GitHub https://github.com › haroonbrokha1 › Free-Fire-Account..." [ref=f2e227] [cursor=pointer]:
+                  - /url: /goto?url=CAESfQHrOzAV4CJLyOAsMu6PoxHMI-bYjdY_T5o2J_xMoEe8-BQ4WeOoOHiVkyJXULGuONPI3oOmO-LVJI6xKctcnnbQ9127ysqNMvf3dchtjXERqFI5Z0kUuS5ANhTMJ88w_u3ahUWW0XU_Lfs21M95HusnXHhFAS2kDR6-Wo-z
+                  - heading "haroonbrokha1/Free-Fire-Account-Info-And-Stats-API ..." [level=3] [ref=f2e228]
+                  - generic [ref=f2e234]:
+                    - generic [ref=f2e235]: GitHub
+                    - generic [ref=f2e237]: https://github.com › haroonbrokha1 › Free-Fire-Account...
+                - button "About this result" [ref=f2e243] [cursor=pointer]
+              - generic [ref=f2e249]:
+                - generic [ref=f2e250]:
+                  - emphasis [ref=f2e251]: Access the detailed Player Stats API documentation
+                  - text: "here: https://www.hlgamingofficial.com/p/free-fire-player-stats-api.html. Free Fire Likes Generator API."
+                - link "Read more" [ref=f2e252] [cursor=pointer]:
+                  - /url: /goto?url=CAES3AEB6zswFYlzpm8L64AhDmflfblrCmlsWhBdMBYbA4oHYrYjYK1vIhp9X6Uo_a1kUMZfdB-x-6DAC3fyRoI30jmWFcr3bUxqzKZppISy55uESbl8aSoQ_9h8jTKoHz4_4xZJoG0QXV2tSs1x9aYP2l9XpyCUfTS_q7o9_Q93p5tZFTQvLbuo2JCrxTjlXGUlnFYDjUzbJ_6ikrFFJTpzwBHspGUM0SlrHpREqT7lVa0zzaLCWV4wi2Z2BM3uSoAB9XmoIi63XyF7JTFc6q24aM97hdimdbEnoK1c1URB
+          - generic [ref=f2e256]:
+            - generic [ref=f2e259]:
+              - link "API Documentation - Free Fire Info API - Games Kinbo Games Kinbo https://api.gameskinbo.com › documentation" [ref=f2e261] [cursor=pointer]:
+                - /url: /goto?url=CAESYAHrOzAVPDaNrWXFCAJHPvOvRMcUNAfKcHvrNlHwZ4Di4cHfAuUVq-5QkdoqK_TK2zzdMaB6mPZJpmZ_fIlIcG3Ml8IBV7h-a5dO4GObfRsj7DTdh0vW48A8bHgKIKhPTg
+                - heading "API Documentation - Free Fire Info API - Games Kinbo" [level=3] [ref=f2e262]
+                - generic [ref=f2e268]:
+                  - generic [ref=f2e269]: Games Kinbo
+                  - generic [ref=f2e271]: https://api.gameskinbo.com › documentation
+              - button "About this result" [ref=f2e277] [cursor=pointer]
+            - generic [ref=f2e283]:
+              - generic [ref=f2e284]:
+                - text: This
+                - emphasis [ref=f2e285]: API
+                - text: allows you to retrieve
+                - emphasis [ref=f2e286]: player
+                - text: profiles,
+                - emphasis [ref=f2e287]: stats
+                - text: ", ranks, guild information, and much more with a single request. Quick Start: Sign in to get your"
+                - emphasis [ref=f2e288]: API
+                - text: key, ...
+              - link "Read more" [ref=f2e289] [cursor=pointer]:
+                - /url: /goto?url=CAESrQEB6zswFUNIQP4sH3VtHRAi5fQOHh3gCdGKQp8UD-nJ6nrJqqysRHwhQcztsT97jToOC70KeBjTAGkhj2NkBUJiufOrcsZhT-sHFd1dKIOGY9zFZMiN36islE6o46RUiLxzx7UCIrxGHvWH6NtV197YOs0HT5aLU5JlpQgtPt59i_Hi9B_VsF-lP6IunMmCMZleTxdDP-Spg7tINPM3Lzbk---Fanu6b17AjJhhng
+          - generic [ref=f2e293]:
+            - generic [ref=f2e296]:
+              - 'link "Free Fire API - www.freefireapi.me | #1 Free Fire Gaming API ... www.freefireapi.me https://www.freefireapi.me" [ref=f2e298] [cursor=pointer]':
+                - /url: /goto?url=CAESUwHrOzAVwC5xRYz4FpNMUo4E3ab8J0v9RpYyse8SXKxSfNnj_VvJqnkQyHA7M6O8ibOS97Y_Uu7US36TacymXimkE9BdoRMEoT33zVxZAeUnZ6bk
+                - 'heading "Free Fire API - www.freefireapi.me | #1 Free Fire Gaming API ..." [level=3] [ref=f2e299]'
+                - generic [ref=f2e308]:
+                  - generic [ref=f2e309]: www.freefireapi.me
+                  - generic [ref=f2e311]: https://www.freefireapi.me
+              - button "About this result" [ref=f2e317] [cursor=pointer]
+            - generic [ref=f2e324]:
+              - emphasis [ref=f2e325]: Free Fire API
+              - text: providing real-time player stats, ban status checking, spam detection, and comprehensive gaming data. No authentication required.
+          - generic [ref=f2e329]:
+            - generic [ref=f2e332]:
+              - 'link "jinix6/free-ff-api: :octocat: Free Fire API: Get game data and ... GitHub https://github.com › jinix6 › free-ff-api" [ref=f2e334] [cursor=pointer]':
+                - /url: /goto?url=CAESXQHrOzAVPReLtBk66cMrEf-17DF4BXCtnNKy4w9tpQymTbld_yXgRu4aD36Xu3Al0VqI6XRr7mjmLsOdl9Y5dndwELOuqrPZAJmFb6c_c3rnHyECXzDC35lKudaOxQ
+                - 'heading "jinix6/free-ff-api: :octocat: Free Fire API: Get game data and ..." [level=3] [ref=f2e335]'
+                - generic [ref=f2e341]:
+                  - generic [ref=f2e342]: GitHub
+                  - generic [ref=f2e344]: https://github.com › jinix6 › free-ff-api
+              - button "About this result" [ref=f2e350] [cursor=pointer]
+            - generic [ref=f2e356]:
+              - generic [ref=f2e357]:
+                - text: "Description: Retrieve detailed information about"
+                - emphasis [ref=f2e358]: Free Fire guilds
+                - text: by querying this API with the guild's region and ID. Receive data such as guild name, creation ...
+              - link "Read more" [ref=f2e359] [cursor=pointer]:
+                - /url: /goto?url=CAESwgEB6zswFUgSgRHD4MMB1IhEKDqjJRJWXrkzBaa5jrokmiqPr6f9hkttZWDhtzi0-aqWaXB6PLAk_fYSobccsGPyocBsgPpQX6DicCKJyD62YOfOL_qkaKtZrgHTN1yEHp4baOV9FvP-my1rb3Y3KbBHfgKlOSeQ7rDIh0_3vCa7sriSC-fGw0QwaQ9mLww0OqIK8HA_Sb2hQ0H53nXmQgOSSIJ4GWETxXq3oaZcBycRkLAEW244Q9dV9KY0pHYAAfxiMQ
+          - generic [ref=f2e363]:
+            - generic [ref=f2e366]:
+              - link "Free Fire Info API Tutorial | Get Player Stats & Profile Data YouTube · Script Kittens 2.7K+ views · 6 months ago" [ref=f2e368] [cursor=pointer]:
+                - /url: /goto?url=CAESYwHrOzAVlgRsHuc4BWIwhRhmNb46ykykZsEa-cmuWHYdMukje22lx0kuB2tq5FrG4o9oS7VKavyfY6ZvrinccLGT3fIN0p5oMYQO1t0l7IqHSXrfnflhL-6KlIvbg4TmI-2C8Q
+                - heading "Free Fire Info API Tutorial | Get Player Stats & Profile Data" [level=3] [ref=f2e369]
+                - generic [ref=f2e375]:
+                  - generic [ref=f2e376]: YouTube · Script Kittens
+                  - generic [ref=f2e378]: 2.7K+ views · 6 months ago
+              - button "About this result" [ref=f2e384] [cursor=pointer]
+            - generic [ref=f2e391]:
+              - text: Using this method, you can get
+              - emphasis [ref=f2e392]: Free Fire account information like UID details
+              - text: ", level, rank, likes, and more. Get Player Stats & Profile Data"
+          - generic [ref=f2e396]:
+            - generic [ref=f2e399]:
+              - link "Free Fire Accout | PDF | User (Computing) | Software Design Scribd https://www.scribd.com › document › Free-Fire-Accout" [ref=f2e401] [cursor=pointer]:
+                - /url: /goto?url=CAEScwHrOzAVoU9hc0_txCO7CnDEmdL1j1V8juXy5IxC5NeSQxOZfp78ejp3pB3jLqxJbb8JvgBARsbCcaXx_pLIBgZNkgJX_7oPKZmIXxh4ibXHAiVajyWhLNsyLqLy926p3CArHOtbwHZDYaa8T-Rq7oLREGA
+                - heading "Free Fire Accout | PDF | User (Computing) | Software Design" [level=3] [ref=f2e402]
+                - generic [ref=f2e408]:
+                  - generic [ref=f2e409]: Scribd
+                  - generic [ref=f2e411]: https://www.scribd.com › document › Free-Fire-Accout
+              - button "About this result" [ref=f2e417] [cursor=pointer]
+            - generic [ref=f2e423]:
+              - generic [ref=f2e424]:
+                - text: The
+                - emphasis [ref=f2e425]: document
+                - text: contains a list of 100 sample
+                - emphasis [ref=f2e426]: Free Fire
+                - text: account details, including
+                - emphasis [ref=f2e427]: UID
+                - text: ", username, email, and password for each account."
+              - link "Read more" [ref=f2e428] [cursor=pointer]:
+                - /url: /goto?url=CAESyAEB6zswFUm27cFOtmzk9vPUYB9fpWtRWyQRWuFdb2DFKx9zpxRTUTKEPERctGCvykS-dS1xuYvVgPVl_JUceyrXw0Z8C6O8lfNJJDArLiz6rJFCHQKbDlgA_gHPYJhLzVkpXqkDYCepzlDrQKelxv8sIATHtP0EvCD3r-AaJdix4upc1kpXYV8-p3Wmrrrk-A0ZuRNJYSwVstgnRFV1oBU3AW3y_EQJwQIjEQHzL6X9TwSoYpyoPI8O7lwqczmqJLzmK3xSzZGoAw
+          - generic [ref=f2e432]:
+            - generic [ref=f2e435]:
+              - link "PRINCE-LKTEAM/Free-Fire-API GitHub https://github.com › PRINCE-LKTEAM › Free-Fire-API" [ref=f2e437] [cursor=pointer]:
+                - /url: /goto?url=CAESZgHrOzAVPFj3Xn9pOnaSY9Wwr78FK9dSWjitLhaqxAOL_fpmcGEbh1Z9L8hssRIsp3iJpsmWcsxJi61omcZR0H7xZ_VIDdZ3gXFUqyxVOqVHUZUP_WBoKEZ8zeZAWCHHHeO6-qhiBw
+                - heading "PRINCE-LKTEAM/Free-Fire-API" [level=3] [ref=f2e438]
+                - generic [ref=f2e444]:
+                  - generic [ref=f2e445]: GitHub
+                  - generic [ref=f2e447]: https://github.com › PRINCE-LKTEAM › Free-Fire-API
+              - button "About this result" [ref=f2e453] [cursor=pointer]
+            - generic [ref=f2e460]:
+              - text: The Free Fire Info API provides developers with programmatic access to
+              - emphasis [ref=f2e461]: Free Fire player data
+              - text: ", including search functionality, detailed statistics, and ..."
+          - generic [ref=f2e465]:
+            - generic [ref=f2e468]:
+              - link "Gaming RapidAPI https://rapidapi.com › search › Gaming" [ref=f2e470] [cursor=pointer]:
+                - /url: /goto?url=CAESWgHrOzAVDkWZjZkMhsDgfST0CvW82f1yCSvrVtBtagy7YSJDk7h0r3qewfIH4SF9VtozuETttQXNz_BPMEfoWY4nYn0cDKEDpb_9rdUkcnTdtQWH8d0rqlSiQw
+                - heading "Gaming" [level=3] [ref=f2e471]
+                - generic [ref=f2e477]:
+                  - generic [ref=f2e478]: RapidAPI
+                  - generic [ref=f2e480]: https://rapidapi.com › search › Gaming
+              - button "About this result" [ref=f2e486] [cursor=pointer]
+            - generic [ref=f2e493]:
+              - text: Gaming
+              - emphasis [ref=f2e494]: APIs
+              - text: connect users to game servers for tasks like account management,
+              - emphasis [ref=f2e495]: stats
+              - text: ", news & more, Available for"
+              - emphasis [ref=f2e496]: Free Fire
+              - text: Global, BGMI, Full
+              - emphasis [ref=f2e497]: documentation
+              - text: "at: ..."
+          - generic [ref=f2e501]:
+            - generic [ref=f2e504]:
+              - 'link "Is there any Official API for FREE FIRE? : r/freefire Reddit · r/freefire 30+ comments · 4 years ago" [ref=f2e506] [cursor=pointer]':
+                - /url: /goto?url=CAESkgEB6zswFc9QF_A1EC6niFIUy_HN4_vveUR_UMZtE1Mjo2nGvnG9waZWqSxsKsf4t5vaQfUM1JlYPdN0ZUUAGUqBFO47Aftw8wbOgL0l5bvxuta3DOzUJqTq6ErbW_AV2ADL32yo6JrfjcfDNLiHLG2g9tZtHTmlEcPdbatUlpN-ocbLr4BZ7LbblbqqEJzycdTczw
+                - 'heading "Is there any Official API for FREE FIRE? : r/freefire" [level=3] [ref=f2e507]'
+                - generic [ref=f2e513]:
+                  - generic [ref=f2e514]: Reddit · r/freefire
+                  - generic [ref=f2e516]: 30+ comments · 4 years ago
+              - button "About this result" [ref=f2e522] [cursor=pointer]
+            - generic [ref=f2e527]: I want to fetch the data of player stats, match stats for Free Fire. But I couldn't find official API of the game . Is there a process that I have to do ...
+            - generic [ref=f2e533]:
+              - link "32 answers" [ref=f2e534] [cursor=pointer]:
+                - /url: /goto?url=CAESmgEB6zswFaUO9jDqBoFNhft4u-gbJNSPejBWJUMHma7rUZLoxKYix-EKxmfe7MxkZ8oAuf2v-zqCSj63w3iMC0EuCyICM6ePEnxhs76G01a7tm0iP5AMWMNtQT3CjYNDs2_WXsRveGGf1Z_uZvWcpEbWxf3bl6rf4vvTkgqXSde2fHNRMFwy4nT6GGgl7NFD3Sv1To7TYJr2Yqlw
+              - generic [ref=f2e535]: ·
+              - generic [ref=f2e536]: "Top answer:"
+              - generic [ref=f2e537]: No, there isn't.
+        - generic [ref=f2e539]:
+          - generic [ref=f2e544]:
+            - heading "People also search for" [level=2] [ref=f2e546]
+            - generic [ref=f2e548]:
+              - generic [ref=f2e549]:
+                - link "Free fire player stats api uid documentation github" [ref=f2e553] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+fire+player+stats+api+uid+documentation+github&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAguEAE
+                - link "Free fire player stats api uid documentation 2022" [ref=f2e567] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+fire+player+stats+api+uid+documentation+2022&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAgtEAE
+                - link "Free Fire-api github" [ref=f2e581] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire-api+github&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAg8EAE
+                - link "Free Fire API key" [ref=f2e595] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire+API+key&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAgrEAE
+              - generic [ref=f2e606]:
+                - link "Free Fire API hub" [ref=f2e610] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire+API+hub&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAg7EAE
+                - link "Free Fire-like-api github" [ref=f2e624] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire-like-api+github&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAg6EAE
+                - link "Free Fire ID information by UID" [ref=f2e638] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire+ID+information+by+UID&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAg3EAE
+                - link "Free Fire account info API" [ref=f2e652] [cursor=pointer]:
+                  - /url: /search?sca_esv=5070939f3177248e&q=Free+Fire+account+info+API&sa=X&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q1QJ6BAgyEAE
+          - navigation [ref=f2e663]:
+            - heading "Page navigation" [level=1] [ref=f2e664]
+            - text: "1"
+            - link "Page 2" [ref=f2e667] [cursor=pointer]:
+              - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&ei=LqafapOlHoChhvcP4enN8Ag&start=10&sa=N&sstk=AS6-VmLxiK3OjA66ScHFl83eTXqpBFh3sFf8_WqEG6GrHfNerkunzrTzMXS-g2j45gORv5HNHbFHuY_i8uX81pcBoUEYYcJzBSzNFA&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q8tMDegQIKRAE
+              - text: "2"
+            - link "Page 3" [ref=f2e669] [cursor=pointer]:
+              - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&ei=LqafapOlHoChhvcP4enN8Ag&start=20&sa=N&sstk=AS6-VmLxiK3OjA66ScHFl83eTXqpBFh3sFf8_WqEG6GrHfNerkunzrTzMXS-g2j45gORv5HNHbFHuY_i8uX81pcBoUEYYcJzBSzNFA&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q8tMDegQIKRAG
+              - text: "3"
+            - link "Page 4" [ref=f2e671] [cursor=pointer]:
+              - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&ei=LqafapOlHoChhvcP4enN8Ag&start=30&sa=N&sstk=AS6-VmLxiK3OjA66ScHFl83eTXqpBFh3sFf8_WqEG6GrHfNerkunzrTzMXS-g2j45gORv5HNHbFHuY_i8uX81pcBoUEYYcJzBSzNFA&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q8tMDegQIKRAI
+              - text: "4"
+            - link "Page 5" [ref=f2e673] [cursor=pointer]:
+              - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&ei=LqafapOlHoChhvcP4enN8Ag&start=40&sa=N&sstk=AS6-VmLxiK3OjA66ScHFl83eTXqpBFh3sFf8_WqEG6GrHfNerkunzrTzMXS-g2j45gORv5HNHbFHuY_i8uX81pcBoUEYYcJzBSzNFA&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q8tMDegQIKRAK
+              - text: "5"
+            - link "Page 6" [ref=f2e675] [cursor=pointer]:
+              - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&ei=LqafapOlHoChhvcP4enN8Ag&start=50&sa=N&sstk=AS6-VmLxiK3OjA66ScHFl83eTXqpBFh3sFf8_WqEG6GrHfNerkunzrTzMXS-g2j45gORv5HNHbFHuY_i8uX81pcBoUEYYcJzBSzNFA&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q8tMDegQIKRAM
+              - text: "6"
+            - heading [level=2] [ref=f2e677]:
+              - link "Next" [ref=f2e678] [cursor=pointer]:
+                - /url: /search?q=Free+Fire+player+stats+API+UID+documentation&sca_esv=5070939f3177248e&ei=LqafapOlHoChhvcP4enN8Ag&start=10&sa=N&sstk=AS6-VmLxiK3OjA66ScHFl83eTXqpBFh3sFf8_WqEG6GrHfNerkunzrTzMXS-g2j45gORv5HNHbFHuY_i8uX81pcBoUEYYcJzBSzNFA&ved=2ahUKEwiT9OvrqN6WAxWAkOEIHeF0E44Q8NMDegQIKRAO
+        - navigation
+    - contentinfo [ref=f2e681]:
+      - heading "Footer links" [level=1] [ref=f2e682]
+      - generic [ref=f2e686]:
+        - generic [ref=f2e688]:
+          - text: India
+          - generic [ref=f2e690]:
+            - button "Hyderabad, Telangana - From your IP address" [ref=f2e692] [cursor=pointer]:
+              - generic [ref=f2e693]: Hyderabad, Telangana
+              - generic [ref=f2e695]:
+                - text: "-"
+                - generic [ref=f2e696]: From your IP address
+            - text: "-"
+            - button "Update location" [ref=f2e698] [cursor=pointer]
+        - generic [ref=f2e701]:
+          - link "Help" [ref=f2e702] [cursor=pointer]:
+            - /url: https://support.google.com/websearch/?p=ws_results_help&hl=en-IN&fg=1
+          - link "Send feedback" [ref=f2e703] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy" [ref=f2e704] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy?hl=en-IN&fg=1
+          - link "Terms" [ref=f2e705] [cursor=pointer]:
+            - /url: https://policies.google.com/terms?hl=en-IN&fg=1

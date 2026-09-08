@@ -28,9 +28,9 @@ export function GuildMembers({ members, onSelectMember }: GuildMembersProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  const filtered = members.map((m) => m.isInDiscordGuild === false ? { ...m, role: 'recruit' as const } : m.role ? m : { ...m, role: 'recruit' as const }).filter((m) => {
-    const isWebsiteMember = m.role === 'recruit' || m.isInDiscordGuild === false;
-    if (isWebsiteMember && (roleFilter === 'all' || roleFilter === 'recruit')) return matchesSearch(m, search);
+  const normalizedMembers = members.map((m) => isNonGuildMember(m) ? { ...m, role: 'recruit' as const } : m);
+  const filtered = normalizedMembers.filter((m) => {
+    if (isNonGuildMember(m) && (roleFilter === 'all' || roleFilter === 'recruit')) return matchesSearch(m, search);
     if (m.status !== 'approved') return false;
     if (roleFilter !== 'all' && m.role !== roleFilter) return false;
     return matchesSearch(m, search);
@@ -42,7 +42,7 @@ export function GuildMembers({ members, onSelectMember }: GuildMembersProps) {
     { value: 'coadmin', label: 'Acting Leader' },
     { value: 'moderator', label: 'Elder' },
     { value: 'member', label: 'Guild Member' },
-    { value: 'recruit', label: 'Members' },
+    { value: 'recruit', label: 'Non Guild Members' },
   ];
 
   const roleSections = roleFilters.slice(1).map((role) => ({
@@ -156,6 +156,10 @@ function matchesSearch(member: GuildMember, search: string) {
   if (!search) return true;
   const query = search.toLowerCase();
   return member.displayName.toLowerCase().includes(query) || member.discordName.toLowerCase().includes(query);
+}
+
+function isNonGuildMember(member: GuildMember) {
+  return member.role === 'recruit' || member.isInDiscordGuild === false;
 }
 
 function MemberGrid({ members, onSelectMember }: { members: GuildMember[]; onSelectMember: (member: GuildMember) => void }) {

@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const dns = require('node:dns');
 const { MongoClient } = require('mongodb');
 const crypto = require('node:crypto');
 const { Client, GatewayIntentBits, Events, SlashCommandBuilder } = require('discord.js');
@@ -17,6 +18,32 @@ const chatMongoUrl = process.env.CHAT_MONGODB_URI || process.env.MONGODB_URI_3;
 const databaseName = process.env.MONGODB_DB || 'free_fire_guild';
 const rankingDatabaseName = process.env.RANKING_MONGODB_DB || 'free_fire_rankings';
 const chatDatabaseName = process.env.CHAT_MONGODB_DB || 'free_fire_chat';
+const chatStorageLimitBytes = 10 * 1024 * 1024;
+const envValue = (name) => {
+  const value = process.env[name]?.trim();
+  return value && value !== '...' && !value.startsWith('your_') ? value : undefined;
+};
+const hlGamingAccountApiUrl = process.env.HLGAMING_ACCOUNT_API_URL || 'https://proapis.hlgamingofficial.com/main/games/freefire/account/api';
+const hlGamingStatsApiUrl = process.env.HLGAMING_STATS_API_URL || 'https://proapis.hlgamingofficial.com/main/games/freefire/stats/api';
+const hlGamingUserUid = envValue('HLGAMING_USER_UID');
+const hlGamingApiKey = envValue('HLGAMING_API_KEY');
+const hlGamingGuildApiKey = envValue('HLGAMING_GUILD_API_KEY') || hlGamingApiKey;
+const hlGamingMemberApiKeys = [envValue('HLGAMING_MEMBER_API_KEY_1'), envValue('HLGAMING_MEMBER_API_KEY_2')].filter(Boolean);
+const hlGamingRegion = process.env.HLGAMING_REGION || 'ind';
+const maxMemberRefreshesPerKey = Number(process.env.HLGAMING_MAX_MEMBER_REFRESHES_PER_KEY || 10);
+const defaultRoleKeySettings = {
+  guildLeader: { refreshEveryDays: 7, refreshDay: 'monday', refreshTime: '04:00', shareMemberCount: 1 },
+  coadmin: { refreshEveryDays: 7, refreshDay: 'monday', refreshTime: '04:00', shareMemberCount: 1 },
+  moderator: { refreshEveryDays: 7, refreshDay: 'monday', refreshTime: '04:00', shareMemberCount: 1 },
+  member: { refreshEveryDays: 7, refreshDay: 'monday', refreshTime: '04:00', shareMemberCount: 1 },
+};
+const defaultAutomationSettings = Object.fromEntries(Object.keys(defaultRoleKeySettings).map((role) => [role, { frequency: 'weekly', customDays: 1, notifications: { discord: true, website: false, device: true }, enabled: true }]));
+const keylessRefreshIntervalMs = 14 * 24 * 60 * 60 * 1000;
+const mongoDnsServers = (process.env.MONGODB_DNS_SERVERS || '1.1.1.1,8.8.8.8')
+  .split(',')
+  .map((server) => server.trim())
+  .filter(Boolean);
+if (mongoDnsServers.length > 0) dns.setServers(mongoDnsServers);
 const localDataPath = process.env.LOCAL_DATA_PATH || path.join(__dirname, 'data.json');
 const appUrl = process.env.APP_URL || 'http://localhost:5173';
 const discordClientId = process.env.DISCORD_CLIENT_ID;
@@ -32,17 +59,21 @@ const discordRoleNames = {
   coadmin: 'Guild Acting Leader',
   moderator: 'Guild Elder',
   member: 'Guild Members',
+  members: 'Non Guild Members',
 };
 const discordRoleIds = {};
+const roleMemberLimits = { admin: 1, coadmin: 1, moderator: 3, member: 45 };
 const chatRoles = new Set(['admin', 'coadmin', 'moderator', 'member']);
 const chatMessages = [];
 let chatMessagesLoaded = false;
 const webSocketSessions = new Map();
 const groupMessageMaxAge = 24 * 60 * 60 * 1000;
 const sessions = new Map();
+const discordAccessTokens = new Map();
 const oauthStates = new Set();
 const webSocketClients = new Set();
 let lastWeeklyReportKey = null;
+let lastWeeklyStatsRefreshKey = null;
 const discordBot = discordBotToken ? new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] }) : null;
 const webSocketServer = new WebSocketServer({ server: httpServer, path: '/ws' });
 
@@ -50,11 +81,34 @@ webSocketServer.on('connection', async (socket, request) => {
   webSocketClients.add(socket);
   webSocketSessions.set(socket, request);
   const session = getSession(request);
+  const bioSyncInterval = session ? setInterval(async () => {
+    if (socket.readyState !== WebSocket.OPEN) return;
+    const sessionToken = getSessionToken(request);
+    const discordToken = sessionToken ? discordAccessTokens.get(sessionToken) : null;
+    if (!discordToken) return;
+    const discordBio = await getDiscordBio(discordToken, session.discordId);
+    if (!discordBio || discordBio === session.discordBio) return;
+    session.discordBio = discordBio;
+    if (sessionToken) sessions.set(sessionToken, session);
+    await getDatabase().then((db) => db?.collection(collectionNames.members).updateOne({ id: session.id }, { $set: { discordBio } })).catch(() => null);
+    socket.send(JSON.stringify({ type: 'profile', discordId: session.discordId, discordBio }));
+  }, 5000) : null;
   if (session) {
+    const sessionToken = getSessionToken(request);
+    const discordToken = sessionToken ? discordAccessTokens.get(sessionToken) : null;
+    if (discordToken) {
+      const discordBio = await getDiscordBio(discordToken, session.discordId);
+      if (discordBio) {
+        session.discordBio = discordBio;
+        if (sessionToken) sessions.set(sessionToken, session);
+        await getDatabase().then((db) => db?.collection(collectionNames.members).updateOne({ id: session.id }, { $set: { discordBio } })).catch(() => null);
+        socket.send(JSON.stringify({ type: 'profile', discordId: session.discordId, discordBio }));
+      }
+    }
     await loadChatMessages();
     pruneExpiredGroupMessages();
     pruneExpiredMessages();
-    const visibleMessages = chatMessages.filter((message) => (message.channel === 'group' && chatRoles.has(session.role)) || session.role === 'admin' || message.authorId === session.id || message.recipientId === session.id);
+    const visibleMessages = chatMessages.filter((message) => (message.channel === 'group' && chatRoles.has(session.role)) || session.role === 'admin' || session.role === 'coadmin' || message.authorId === session.id || message.recipientId === session.id);
     socket.send(JSON.stringify({ type: 'chat:history', messages: visibleMessages }));
   }
   if (discordBot?.isReady() && discordGuildId) {
@@ -74,7 +128,8 @@ webSocketServer.on('connection', async (socket, request) => {
       }
       discordMembers.forEach((guildMember, discordId) => {
         const status = guildMember?.presence?.status || 'offline';
-        socket.send(JSON.stringify({ type: 'presence', discordId, status, isOnline: status !== 'offline' }));
+        const discordStatus = getDiscordCustomStatus(guildMember?.presence);
+        socket.send(JSON.stringify({ type: 'presence', discordId, status, isOnline: status !== 'offline', discordStatus }));
         if (guildMember) {
           socket.send(JSON.stringify({ type: 'role', discordId: guildMember.id, ...getDiscordRoleData(guildMember) }));
           socket.send(JSON.stringify({ type: 'profile', discordId: guildMember.id, ...getDiscordProfileData(guildMember) }));
@@ -91,6 +146,15 @@ webSocketServer.on('connection', async (socket, request) => {
     }
     const currentSession = getSession(request);
     if (!currentSession) return;
+    if (message.type === 'chat:refresh') {
+      void loadChatMessages().then(() => {
+        pruneExpiredGroupMessages();
+        pruneExpiredMessages();
+        const visibleMessages = chatMessages.filter((item) => (item.channel === 'group' && chatRoles.has(currentSession.role)) || currentSession.role === 'admin' || currentSession.role === 'coadmin' || item.authorId === currentSession.id || item.recipientId === currentSession.id);
+        socket.send(JSON.stringify({ type: 'chat:history', messages: visibleMessages }));
+      });
+      return;
+    }
     if (message.type === 'chat:send' && typeof message.content === 'string' && (!message.attachment || message.attachment.type === 'image' || message.attachment.type === 'document')) {
       if (!chatRoles.has(currentSession.role)) return;
       pruneExpiredMessages();
@@ -163,6 +227,7 @@ webSocketServer.on('connection', async (socket, request) => {
     }
   });
   socket.on('close', () => {
+    if (bioSyncInterval) clearInterval(bioSyncInterval);
     webSocketClients.delete(socket);
     webSocketSessions.delete(socket);
   });
@@ -275,7 +340,7 @@ function sendChatMessageToParticipants(chatMessage) {
     if (socket.readyState !== WebSocket.OPEN) continue;
     const session = getSession(webSocketSessions.get(socket));
     if (!session) continue;
-    const isLeader = session.role === 'admin';
+    const isLeader = session.role === 'admin' || session.role === 'coadmin';
     const isParticipant = session.id === chatMessage.authorId || session.id === chatMessage.recipientId;
     if (chatMessage.channel === 'group' || isLeader || isParticipant) {
       socket.send(JSON.stringify({ type: 'chat:message', chatMessage }));
@@ -288,12 +353,24 @@ function sendChatTypingToParticipants(typingUser) {
     if (socket.readyState !== WebSocket.OPEN) continue;
     const session = getSession(webSocketSessions.get(socket));
     if (!session) continue;
-    const isLeader = session.role === 'admin';
+    const isLeader = session.role === 'admin' || session.role === 'coadmin';
     const isParticipant = session.id === typingUser.authorId || session.id === typingUser.recipientId;
     if (typingUser.channel === 'group' || isLeader || isParticipant) {
       socket.send(JSON.stringify({ type: 'chat:typing', typingUser }));
     }
   }
+}
+
+function sendDeviceReminderToMember(memberId, content) {
+  let delivered = false;
+  for (const socket of webSocketClients) {
+    if (socket.readyState !== WebSocket.OPEN) continue;
+    const session = getSession(webSocketSessions.get(socket));
+    if (!session || session.id !== memberId) continue;
+    socket.send(JSON.stringify({ type: 'device:notification', title: 'API key reminder', content }));
+    delivered = true;
+  }
+  return delivered;
 }
 
 app.use((request, response, next) => {
@@ -326,7 +403,8 @@ if (discordBot) {
   discordBot.on(Events.PresenceUpdate, async (_oldPresence, presence) => {
     const status = presence.status || 'offline';
     const isOnline = status !== 'offline';
-    broadcast({ type: 'presence', discordId: presence.userId, status, isOnline });
+    const discordStatus = getDiscordCustomStatus(presence);
+    broadcast({ type: 'presence', discordId: presence.userId, status, isOnline, discordStatus });
     const guild = presence.guild;
     if (guild) {
       const onlineMembers = guild.members.cache.filter((member) => member.presence?.status && member.presence.status !== 'offline').size;
@@ -336,7 +414,7 @@ if (discordBot) {
       const db = await getDatabase();
       await db?.collection(collectionNames.members).updateOne(
         { discordId: presence.userId },
-        { $set: { presence: status, isOnline } },
+        { $set: { presence: status, isOnline, discordStatus } },
       );
     } catch (_error) {
       // Presence updates are realtime enhancements; the WebSocket update still reaches clients.
@@ -396,99 +474,192 @@ if (discordBot) {
 
 let database;
 let mongoClient;
+let mongoRetryAt = 0;
+let mongoConnectPromise;
 let rankingDatabase;
 let rankingMongoClient;
+let rankingMongoRetryAt = 0;
+let rankingConnectPromise;
 let chatDatabase;
 let chatMongoClient;
+let chatMongoRetryAt = 0;
+let chatConnectPromise;
+let chatUsingPrimaryDatabase = false;
+let chatStorageLocalOnly = false;
+let chatStorageUsageCheckedAt = 0;
 
 async function getDatabase() {
   if (!mongoUrl) return null;
+  if (Date.now() < mongoRetryAt) return null;
   if (!database) {
-    mongoClient = new MongoClient(mongoUrl, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-    });
-    await Promise.race([
-      mongoClient.connect(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('MongoDB connection timed out')), 5000)),
-    ]);
-    database = mongoClient.db(databaseName);
+    if (mongoConnectPromise) return mongoConnectPromise;
+    mongoConnectPromise = connectPrimaryDatabase();
+    try {
+      return await mongoConnectPromise;
+    } finally {
+      mongoConnectPromise = null;
+    }
   }
   return database;
 }
 
+async function connectPrimaryDatabase() {
+    const client = new MongoClient(mongoUrl, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+    });
+    mongoClient = client;
+    try {
+      await Promise.race([
+        client.connect(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('MongoDB connection timed out')), 5000)),
+      ]);
+    } catch (error) {
+      await client.close().catch(() => null);
+      mongoClient = null;
+      mongoRetryAt = Date.now() + 30000;
+      return null;
+    }
+    database = mongoClient.db(databaseName);
+    return database;
+}
+
 async function getRankingDatabase() {
   if (!rankingMongoUrl) return null;
+  if (Date.now() < rankingMongoRetryAt) return null;
   if (!rankingDatabase) {
-    rankingMongoClient = new MongoClient(rankingMongoUrl, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 });
-    await Promise.race([
-      rankingMongoClient.connect(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Ranking MongoDB connection timed out')), 5000)),
-    ]);
-    rankingDatabase = rankingMongoClient.db(rankingDatabaseName);
+    if (rankingConnectPromise) return rankingConnectPromise;
+    rankingConnectPromise = connectRankingDatabase();
+    try {
+      return await rankingConnectPromise;
+    } finally {
+      rankingConnectPromise = null;
+    }
   }
   return rankingDatabase;
 }
 
+async function connectRankingDatabase() {
+    const client = new MongoClient(rankingMongoUrl, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 });
+    rankingMongoClient = client;
+    try {
+      await Promise.race([
+        client.connect(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Ranking MongoDB connection timed out')), 5000)),
+      ]);
+    } catch (error) {
+      await client.close().catch(() => null);
+      rankingMongoClient = null;
+      rankingMongoRetryAt = Date.now() + 30000;
+      return null;
+    }
+    rankingDatabase = rankingMongoClient.db(rankingDatabaseName);
+    return rankingDatabase;
+}
+
 async function getChatDatabase() {
-  if (!chatMongoUrl) return null;
+  if (chatUsingPrimaryDatabase) return database;
+  if (!chatMongoUrl) return getDatabase();
+  if (Date.now() < chatMongoRetryAt) return null;
   if (!chatDatabase) {
-    chatMongoClient = new MongoClient(chatMongoUrl, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 });
-    await Promise.race([
-      chatMongoClient.connect(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Chat MongoDB connection timed out')), 5000)),
-    ]);
-    chatDatabase = chatMongoClient.db(chatDatabaseName);
+    if (chatConnectPromise) return chatConnectPromise;
+    chatConnectPromise = connectChatDatabase();
+    try {
+      return await chatConnectPromise;
+    } finally {
+      chatConnectPromise = null;
+    }
   }
   return chatDatabase;
 }
 
+async function connectChatDatabase() {
+    const client = new MongoClient(chatMongoUrl, { serverSelectionTimeoutMS: 5000, connectTimeoutMS: 5000 });
+    chatMongoClient = client;
+    try {
+      await Promise.race([
+        client.connect(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Chat MongoDB connection timed out')), 5000)),
+      ]);
+    } catch (error) {
+      await client.close().catch(() => null);
+      chatMongoClient = null;
+      chatMongoRetryAt = Date.now() + 30000;
+      const primaryDatabase = await getDatabase();
+      if (primaryDatabase) {
+        chatUsingPrimaryDatabase = true;
+        return primaryDatabase;
+      }
+      console.warn(`Chat MongoDB unavailable, using local mirror for 30s: ${error.message}`);
+      return null;
+    }
+    chatDatabase = chatMongoClient.db(chatDatabaseName);
+    return chatDatabase;
+}
+
+async function isChatDatabaseWithinLimit(db) {
+  if (!db || chatStorageLocalOnly) return false;
+  if (Date.now() - chatStorageUsageCheckedAt < 30000) return true;
+  try {
+    const stats = await db.command({ collStats: 'chat_messages' });
+    chatStorageUsageCheckedAt = Date.now();
+    if (Number(stats.storageSize || 0) + Number(stats.totalIndexSize || 0) >= chatStorageLimitBytes) {
+      chatStorageLocalOnly = true;
+      console.warn('Chat MongoDB storage reached 10 MB; using local chat storage only.');
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.warn(`Chat MongoDB storage check unavailable, keeping local mirror: ${error.message}`);
+    return false;
+  }
+}
+
 async function loadChatMessages() {
   if (chatMessagesLoaded) return;
+  const localMessages = getLocalDocuments('chat_messages');
   try {
     const db = await getChatDatabase();
-    const storedMessages = db
+    const databaseMessages = db && await isChatDatabaseWithinLimit(db)
       ? await db.collection('chat_messages').find({}).sort({ createdAt: 1 }).limit(100).toArray()
-      : getLocalDocuments('chat_messages');
-    chatMessages.push(...storedMessages);
+      : [];
+    const messagesById = new Map([...databaseMessages, ...localMessages].map((message) => [message.id, message]));
+    chatMessages.push(...[...messagesById.values()].sort((first, second) => Date.parse(first.createdAt) - Date.parse(second.createdAt)).slice(-100));
   } catch (error) {
     console.warn(`Chat MongoDB read unavailable, using local data: ${error.message}`);
-    chatMessages.push(...getLocalDocuments('chat_messages'));
+    chatMessages.push(...localMessages.slice(-100));
   }
   pruneExpiredMessages();
   chatMessagesLoaded = true;
 }
 
 async function persistChatMessage(message) {
+  saveLocalDocument('chat_messages', message);
   try {
     const db = await getChatDatabase();
-    if (db) await db.collection('chat_messages').replaceOne({ id: message.id }, message, { upsert: true });
-    else saveLocalDocument('chat_messages', message);
+    if (await isChatDatabaseWithinLimit(db)) await db.collection('chat_messages').replaceOne({ id: message.id }, message, { upsert: true });
   } catch (error) {
-    console.warn(`Chat MongoDB write unavailable, using local data: ${error.message}`);
-    saveLocalDocument('chat_messages', message);
+    console.warn(`Chat MongoDB write unavailable, keeping local mirror: ${error.message}`);
   }
 }
 
 async function updatePersistedChatMessage(message) {
+  saveLocalDocument('chat_messages', message);
   try {
     const db = await getChatDatabase();
-    if (db) await db.collection('chat_messages').updateOne({ id: message.id }, { $set: { seenBy: message.seenBy || [] } });
-    else saveLocalDocument('chat_messages', message);
+    if (await isChatDatabaseWithinLimit(db)) await db.collection('chat_messages').updateOne({ id: message.id }, { $set: { seenBy: message.seenBy || [] } });
   } catch (error) {
-    console.warn(`Chat MongoDB seen update unavailable, using local data: ${error.message}`);
-    saveLocalDocument('chat_messages', message);
+    console.warn(`Chat MongoDB seen update unavailable, keeping local mirror: ${error.message}`);
   }
 }
 
 async function removePersistedChatMessage(id) {
+  removeLocalDocument('chat_messages', id);
   try {
     const db = await getChatDatabase();
-    if (db) await db.collection('chat_messages').deleteOne({ id });
-    else removeLocalDocument('chat_messages', id);
+    if (await isChatDatabaseWithinLimit(db)) await db.collection('chat_messages').deleteOne({ id });
   } catch (error) {
-    console.warn(`Chat MongoDB delete unavailable, using local data: ${error.message}`);
-    removeLocalDocument('chat_messages', id);
+    console.warn(`Chat MongoDB delete unavailable, keeping local mirror: ${error.message}`);
   }
 }
 
@@ -500,6 +671,311 @@ const collectionNames = {
   'ranking-tasks': 'ranking_tasks',
   'ranking-scores': 'ranking_scores',
 };
+const freeFireStatsCollection = 'free_fire_stats';
+const hlGamingKeysCollection = 'hl_gaming_api_keys';
+const hlGamingConfigCollection = 'hl_gaming_config';
+const guildProfileCollection = 'guild_profile';
+const guildProfileRefreshMs = 7 * 24 * 60 * 60 * 1000;
+
+function getFreeFireStatsConfig(apiKey = hlGamingApiKey) {
+  return Boolean(hlGamingUserUid && apiKey);
+}
+
+function encryptApiKey(value) {
+  if (!value) return '';
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', crypto.createHash('sha256').update(sessionSecret).digest(), iv);
+  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  return `${iv.toString('base64url')}.${cipher.getAuthTag().toString('base64url')}.${encrypted.toString('base64url')}`;
+}
+
+function decryptApiKey(value) {
+  if (!value) return '';
+  try {
+    const [iv, tag, encrypted] = value.split('.');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', crypto.createHash('sha256').update(sessionSecret).digest(), Buffer.from(iv, 'base64url'));
+    decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+    return Buffer.concat([decipher.update(Buffer.from(encrypted, 'base64url')), decipher.final()]).toString('utf8');
+  } catch (_error) {
+    return '';
+  }
+}
+
+function maskApiKey(value) {
+  if (!value) return null;
+  return value.length <= 6 ? '••••••' : `${value.slice(0, 3)}••••${value.slice(-4)}`;
+}
+
+function publicMember(member, hasHlGamingApiKey = Boolean(member?.hlGamingApiKeyEncrypted)) {
+  if (!member) return member;
+  const { hlGamingApiKeyEncrypted, ...safeMember } = member;
+  return { ...safeMember, hasHlGamingApiKey };
+}
+
+async function getStoredHlGamingKey(memberId) {
+  const db = await getRankingDatabase();
+  return db?.collection(hlGamingKeysCollection).findOne({ memberId }) || null;
+}
+
+async function getHlGamingConfig() {
+  const db = await getRankingDatabase();
+  const saved = await db?.collection(hlGamingConfigCollection).findOne({ id: 'settings' });
+  return {
+    maxMemberRefreshesPerKey: Number(saved?.maxMemberRefreshesPerKey) || maxMemberRefreshesPerKey,
+    roleSettings: Object.fromEntries(Object.entries(defaultRoleKeySettings).map(([role, defaults]) => [role, { ...defaults, ...(saved?.roleSettings?.[role] || {}) }])),
+    automationSettings: Object.fromEntries(Object.entries(defaultAutomationSettings).map(([role, defaults]) => [role, { ...defaults, ...(saved?.automationSettings?.[role] || {}), notifications: { ...defaults.notifications, ...(saved?.automationSettings?.[role]?.notifications || {}) } }])),
+  };
+}
+
+function publicRoleKeys(config) {
+  return Object.fromEntries(Object.keys(defaultRoleKeySettings).map((role) => {
+    const key = decryptApiKey(config?.roleApiKeys?.[role]);
+    return [role, { configured: Boolean(key), key: maskApiKey(key), source: 'Website-managed encrypted key' }];
+  }));
+}
+
+async function publicMemberWithKey(member) {
+  const keyRecord = await getStoredHlGamingKey(member?.id);
+  return publicMember(member, Boolean(keyRecord?.apiKeyEncrypted));
+}
+
+async function validateHlGamingApiKey(apiKey, uid, region) {
+  if (!hlGamingUserUid) throw new Error('HL Gaming user UID is not configured on the server.');
+  const response = await fetch(hlGamingAccountApiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sectionName: 'AllData', PlayerUid: uid, region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey }),
+  });
+  if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'The entered HL Gaming API key is not valid.' : `HL Gaming rejected the key with HTTP ${response.status}.`);
+  const payload = await response.json();
+  const root = payload?.result || payload?.data || payload;
+  const account = root?.AccountInfo || root?.accountInfo || root?.basicInfo || {};
+  if (!account.AccountName && !account.accountName) throw new Error('The entered HL Gaming API key is not valid.');
+  return true;
+}
+
+function numberValue(...values) {
+  const value = values.find((candidate) => candidate !== undefined && candidate !== null && candidate !== '');
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function normalizeFreeFireStats(payload, uid) {
+  const root = payload?.result || payload?.data || payload;
+  const account = root?.AccountInfo || root?.accountInfo || root?.basicInfo || {};
+  const playerStats = root?.playerStats || root?.playerstats || root?.data || {};
+  const career = playerStats.BR_CAREER || playerStats.brCareer || {};
+  const csCareer = playerStats.CS_CAREER || playerStats.csCareer || {};
+  const modes = [playerStats.solostats, playerStats.duostats, playerStats.quadstats, root?.soloStats, root?.duoStats, root?.quadStats, ...Object.values(career), csCareer].filter(Boolean);
+  const accountId = account.AccountId || account.accountId || account.accountID || modes.find((mode) => mode.account_id || mode.accountId)?.account_id || (account.AccountName ? uid : '');
+  const brRankPoints = numberValue(account.BrRankPoint, account.rankingPoints);
+  const csRankPoints = numberValue(account.CsRankPoint, account.csRankingPoints);
+  const matches = modes.reduce((total, mode) => total + numberValue(mode.gamesplayed, mode.gamesPlayed, mode.games_played), 0);
+  const wins = modes.reduce((total, mode) => total + numberValue(mode.wins), 0);
+  const eliminations = modes.reduce((total, mode) => total + numberValue(mode.kills), 0);
+  const headshotKills = modes.reduce((total, mode) => total + numberValue(mode.detailedstats?.headshotkills, mode.detailedStats?.headshotKills, mode.total_headshots_kills, mode.headshotKills), 0);
+  return {
+    freeFireUid: String(accountId),
+    nickname: account.AccountName || account.nickname || '',
+    region: account.AccountRegion || account.region || '',
+    likes: numberValue(account.AccountLikes, account.liked),
+    brMaxRank: numberValue(account.BrMaxRank, account.maxRank),
+    brRankPoints,
+    csMaxRank: numberValue(account.CsMaxRank, account.csMaxRank),
+    csRankPoints,
+    accountLevel: numberValue(account.AccountLevel, account.level),
+    matches,
+    wins,
+    eliminations,
+    headshotKills,
+    winRate: matches ? Number(((wins / matches) * 100).toFixed(2)) : 0,
+    fetchedAt: new Date().toISOString(),
+    provider: 'hlgaming',
+  };
+}
+
+async function fetchFreeFireStats(uid, region, apiKey = hlGamingApiKey) {
+  if (!getFreeFireStatsConfig(apiKey)) throw new Error('HL Gaming API credentials are not configured');
+  const requestOptions = (body) => ({
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const [accountResponse, statsResponse] = await Promise.all([
+    fetch(hlGamingAccountApiUrl, requestOptions({ sectionName: 'AllData', PlayerUid: uid, region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey })),
+    fetch(hlGamingStatsApiUrl, requestOptions({ uid, region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey })),
+  ]);
+  if (!accountResponse.ok) throw new Error(`HL Gaming account API returned HTTP ${accountResponse.status}`);
+  if (!statsResponse.ok) throw new Error(`HL Gaming stats API returned HTTP ${statsResponse.status}`);
+  const accountPayload = await accountResponse.json();
+  const statsPayload = await statsResponse.json();
+  const stats = normalizeFreeFireStats({
+    ...accountPayload,
+    result: {
+      ...(accountPayload.result || {}),
+      playerStats: statsPayload.result?.data || statsPayload.data || {},
+    },
+  }, uid);
+  if (stats.freeFireUid !== String(uid)) throw new Error('HL Gaming did not find this UID in the selected region. Confirm the UID and region, or contact HL Gaming because its region service may be unavailable.');
+  return stats;
+}
+
+async function saveFreeFireStats(memberId, uid, region, apiKey = hlGamingApiKey) {
+  const stats = await fetchFreeFireStats(uid, region, apiKey);
+  const db = await getDatabase();
+  const record = { id: memberId, memberId, ...stats, region };
+  if (db) await db.collection(freeFireStatsCollection).replaceOne({ id: memberId }, record, { upsert: true });
+  else saveLocalDocument(freeFireStatsCollection, record);
+  return stats;
+}
+
+function getIndiaTime(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit' }).formatToParts(now);
+  return Object.fromEntries(parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+}
+
+function weeklyRefreshKey(now = new Date()) {
+  const time = getIndiaTime(now);
+  return `${time.year}-${time.month}-${time.day}`;
+}
+
+async function removeExpiredHlGamingKeys() {
+  const db = await getRankingDatabase();
+  if (!db) return;
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  await db.collection(hlGamingKeysCollection).deleteMany({
+    $or: [
+      { lastUsedAt: { $lt: cutoff } },
+      { lastValidatedAt: { $lt: cutoff } },
+      { expiresAt: { $lte: new Date().toISOString() } },
+    ],
+  });
+}
+
+async function refreshWeeklyFreeFireData() {
+  await removeExpiredHlGamingKeys().catch((error) => console.warn(`HL Gaming key cleanup failed: ${error.message}`));
+  const time = getIndiaTime();
+  const config = await getHlGamingConfig();
+  const websiteRoleKeys = Object.fromEntries(Object.keys(defaultRoleKeySettings).map((role) => [role, decryptApiKey(config?.roleApiKeys?.[role])]));
+  const schedule = config.roleSettings.guildLeader;
+  const [scheduledHour, scheduledMinute] = schedule.refreshTime.split(':').map(Number);
+  const weekday = time.weekday.toLowerCase();
+  if (weekday !== schedule.refreshDay.slice(0, 3) || Number(time.hour) !== scheduledHour || Number(time.minute) !== scheduledMinute) return;
+  const runKey = weeklyRefreshKey();
+  if (lastWeeklyStatsRefreshKey === runKey) return;
+  lastWeeklyStatsRefreshKey = runKey;
+  const db = await getDatabase();
+  const settings = db
+    ? await db.collection(collectionNames.settings).findOne({ id: 'guild' })
+    : getLocalDocuments(collectionNames.settings).find((item) => item.id === 'guild');
+  const ownerUid = settings?.guildOwnerUid;
+  if (!ownerUid) return;
+  const region = hlGamingRegion;
+  const { maxMemberRefreshesPerKey: configuredMaxMemberRefreshes } = config;
+  try {
+    const [guildProfile, ownerStats] = await Promise.all([
+      fetchGuildProfile(ownerUid, region, websiteRoleKeys.guildLeader || hlGamingGuildApiKey),
+      fetchFreeFireStats(ownerUid, region, websiteRoleKeys.guildLeader || hlGamingGuildApiKey),
+    ]);
+    if (db) {
+      await db.collection(guildProfileCollection).replaceOne({ id: 'guild' }, guildProfile, { upsert: true });
+      const owner = await db.collection(collectionNames.members).findOne({ $or: [{ freeFireUid: ownerUid }, { isOwner: true }, { role: 'admin' }] });
+      if (owner) await db.collection(collectionNames.members).updateOne({ id: owner.id }, { $set: { freeFireUid: ownerUid, stats: ownerStats } });
+    } else saveLocalDocument(guildProfileCollection, guildProfile);
+  } catch (error) {
+    console.warn(`Weekly guild refresh failed: ${error.message}`);
+  }
+  const members = db
+    ? await db.collection(collectionNames.members).find({ status: 'approved', freeFireUid: { $exists: true, $ne: '' } }).toArray()
+    : getLocalDocuments(collectionNames.members).filter((item) => item.status === 'approved' && item.freeFireUid);
+  const keys = [...new Set([...Object.values(websiteRoleKeys).filter(Boolean), ...hlGamingMemberApiKeys])];
+  const usesByKey = new Map(keys.map((key) => [key, 0]));
+  const sharedUsesByRole = new Map();
+  for (const candidate of members) {
+    if (candidate.freeFireUid === ownerUid) continue;
+    const storedKey = await getStoredHlGamingKey(candidate.id);
+    const personalKey = decryptApiKey(storedKey?.apiKeyEncrypted) || decryptApiKey(candidate.hlGamingApiKeyEncrypted);
+    const roleSettings = config.roleSettings[candidate.role] || config.roleSettings.member;
+    const refreshInterval = roleSettings.refreshEveryDays * 24 * 60 * 60 * 1000 || (personalKey ? 7 * 24 * 60 * 60 * 1000 : keylessRefreshIntervalMs);
+    const lastRefreshAt = Date.parse(candidate.lastFreeFireStatsRefreshAt || '');
+    if (lastRefreshAt && Date.now() - lastRefreshAt < refreshInterval) continue;
+    if (personalKey && !usesByKey.has(personalKey)) usesByKey.set(personalKey, 0);
+    const sharedKeyEligible = candidate.role === 'coadmin' || candidate.role === 'moderator' || candidate.role === 'member';
+    const sharedMembersForRole = sharedUsesByRole.get(candidate.role) || 0;
+    const roleKey = websiteRoleKeys[candidate.role];
+    const key = personalKey && usesByKey.get(personalKey) < configuredMaxMemberRefreshes
+      ? personalKey
+      : roleKey && (usesByKey.get(roleKey) || 0) < configuredMaxMemberRefreshes
+        ? roleKey
+      : sharedKeyEligible && sharedMembersForRole < roleSettings.shareMemberCount ? keys.find((value) => (usesByKey.get(value) || 0) < configuredMaxMemberRefreshes) : null;
+    if (!key) continue;
+    try {
+      const stats = await saveFreeFireStats(candidate.id, candidate.freeFireUid, candidate.application?.region || region, key);
+      usesByKey.set(key, (usesByKey.get(key) || 0) + 1);
+      if (!personalKey) sharedUsesByRole.set(candidate.role, sharedMembersForRole + 1);
+      const refreshChanges = { stats, lastFreeFireStatsRefreshAt: new Date().toISOString() };
+      if (db) await db.collection(collectionNames.members).updateOne({ id: candidate.id }, { $set: refreshChanges });
+      else updateLocalDocument(collectionNames.members, candidate.id, refreshChanges);
+      const rankingDb = await getRankingDatabase();
+      if (personalKey && rankingDb) await rankingDb.collection(hlGamingKeysCollection).updateOne({ memberId: candidate.id }, { $set: { lastUsedAt: new Date().toISOString(), lastValidatedAt: new Date().toISOString() } });
+    } catch (error) {
+      if (personalKey && /not valid|HTTP 401|HTTP 403/i.test(error.message)) {
+        const rankingDb = await getRankingDatabase();
+        await rankingDb?.collection(hlGamingKeysCollection).deleteOne({ memberId: candidate.id });
+      }
+      console.warn(`Weekly member refresh failed for ${candidate.id}: ${error.message}`);
+    }
+  }
+}
+
+function normalizeGuildProfile(payload, region) {
+  const root = payload?.result || payload?.data || payload;
+  const guild = root?.GuildInfo || root?.guildInfo || root?.clanBasicInfo || root || {};
+  const captain = root?.captainBasicInfo || root?.captainInfo || {};
+  const guildId = String(guild.GuildID || guild.Guildid || guild.guildId || guild.clanId || '');
+  if (!guildId || !guild.GuildName && !guild.guildName && !guild.clanName) throw new Error('HL Gaming did not return guild details');
+  return {
+    id: 'guild',
+    guildId,
+    guildName: guild.GuildName || guild.guildName || guild.clanName || '',
+    guildLevel: numberValue(guild.GuildLevel, guild.guildLevel, guild.clanLevel),
+    capacity: numberValue(guild.GuildCapacity, guild.capacity),
+    memberCount: numberValue(guild.GuildMember, guild.memberNum, guild.memberCount),
+    ownerId: String(guild.GuildOwner || guild.guildOwner || guild.captainId || ''),
+    ownerName: guild.GuildOwnerName || captain.nickname || captain.AccountName || captain.accountName || 'Unknown',
+    region: guild.region || region.toUpperCase(),
+    refreshedAt: new Date().toISOString(),
+  };
+}
+
+async function fetchGuildProfile(uid, region, apiKey = hlGamingGuildApiKey) {
+  if (!getFreeFireStatsConfig(apiKey)) throw new Error('HL Gaming API credentials are not configured');
+  const response = await fetch(hlGamingAccountApiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sectionName: 'GuildInfo', PlayerUid: uid, region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey }),
+  });
+  if (!response.ok) throw new Error(`HL Gaming API returned HTTP ${response.status}`);
+  return normalizeGuildProfile(await response.json(), region);
+}
+
+async function getCachedGuildProfile(uid, region) {
+  const db = await getDatabase();
+  const cached = db
+    ? await db.collection(guildProfileCollection).findOne({ id: 'guild' })
+    : getLocalDocuments(guildProfileCollection).find((item) => item.id === 'guild');
+  if (cached && Date.now() - Date.parse(cached.refreshedAt) < guildProfileRefreshMs) return cached;
+  let profile;
+  try {
+    profile = await fetchGuildProfile(uid, region);
+  } catch (error) {
+    if (cached) return cached;
+    throw error;
+  }
+  if (db) await db.collection(guildProfileCollection).replaceOne({ id: 'guild' }, profile, { upsert: true });
+  else saveLocalDocument(guildProfileCollection, profile);
+  return profile;
+}
 
 function isRankingResource(resource) {
   return resource === 'ranking-tasks' || resource === 'ranking-scores';
@@ -569,8 +1045,12 @@ function getProfileAvatar(profile) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.global_name || profile.username)}&background=f5a623&color=111827&size=200`;
 }
 
+function getSessionToken(request) {
+  return request.headers.cookie?.match(/guild_session=([^;]+)/)?.[1];
+}
+
 function getSession(request) {
-  const token = request.headers.cookie?.match(/guild_session=([^;]+)/)?.[1];
+  const token = getSessionToken(request);
   const activeSession = token ? sessions.get(token) : null;
   if (activeSession) return activeSession;
   const stored = request.headers.cookie?.match(/guild_session_data=([^;]+)/)?.[1];
@@ -588,12 +1068,14 @@ function getSession(request) {
   }
 }
 
-function setSession(response, member) {
+function setSession(response, member, discordToken) {
+  const safeMember = publicMember(member);
   const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, member);
-  const encodedMember = Buffer.from(JSON.stringify(member)).toString('base64url');
+  sessions.set(token, safeMember);
+  if (discordToken) discordAccessTokens.set(token, discordToken);
+  const encodedMember = Buffer.from(JSON.stringify(safeMember)).toString('base64url');
   const signature = crypto.createHmac('sha256', sessionSecret).update(encodedMember).digest('base64url');
-  const cookieOptions = `HttpOnly; SameSite=Lax; Path=/; Max-Age=604800${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+  const cookieOptions = `${process.env.NODE_ENV === 'production' ? 'HttpOnly; SameSite=None; Secure' : 'HttpOnly; SameSite=Lax'}; Path=/; Max-Age=604800`;
   response.setHeader('Set-Cookie', [`guild_session=${token}; ${cookieOptions}`, `guild_session_data=${encodedMember}.${signature}; ${cookieOptions}`]);
 }
 
@@ -625,12 +1107,29 @@ async function getDiscordGuildRole(discordUserId) {
   return getDiscordRoleData(guildMember);
 }
 
+async function getDiscordBio(token, userId) {
+  const authorization = { Authorization: `${token.token_type} ${token.access_token}` };
+  for (const endpoint of ['https://discord.com/api/v10/users/@me/profile', `https://discord.com/api/v10/users/${userId}/profile`]) {
+    try {
+      const profileResponse = await fetch(endpoint, { headers: authorization });
+      if (!profileResponse.ok) continue;
+      const profile = await profileResponse.json();
+      const bio = profile.user_profile?.bio ?? profile.bio;
+      if (typeof bio === 'string') return bio;
+    } catch (_error) {
+      // Try the next Discord profile endpoint.
+    }
+  }
+  return '';
+}
+
 function getDiscordRoleData(guildMember) {
   const isOwner = guildMember.guild.ownerId === guildMember.id;
   if (guildMember.roles.cache.has(discordRoleIds.admin)) return { role: 'admin', isOwner };
   if (guildMember.roles.cache.has(discordRoleIds.coadmin) || guildMember.roles.cache.has(discordCoadminRoleId)) return { role: 'coadmin', isOwner };
   if (guildMember.roles.cache.has(discordRoleIds.moderator)) return { role: 'moderator', isOwner };
   if (guildMember.roles.cache.has(discordRoleIds.member)) return { role: 'member', isOwner };
+  if (guildMember.roles.cache.has(discordRoleIds.members)) return { role: 'recruit', isOwner };
   return { role: 'recruit', isOwner };
 }
 
@@ -641,6 +1140,11 @@ function getDiscordProfileData(guildMember) {
     discordName: user.discriminator && user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username,
     discordAvatar: user.avatar ? `/api/discord-avatar/${user.id}/${user.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(guildMember.displayName || user.username)}&background=f5a623&color=111827&size=256`,
   };
+}
+
+function getDiscordCustomStatus(presence) {
+  const customStatus = presence?.activities?.find((activity) => activity.type === 4);
+  return typeof customStatus?.state === 'string' ? customStatus.state : '';
 }
 
 async function ensureDiscordRoles() {
@@ -663,7 +1167,8 @@ async function syncDiscordRole(discordUserId, role) {
   if (!guildMember) return;
   const managedRoleIds = Object.values(discordRoleIds).filter(Boolean);
   await guildMember.roles.remove(managedRoleIds);
-  if (discordRoleIds[role]) await guildMember.roles.add(discordRoleIds[role]);
+  const discordRole = role === 'recruit' ? discordRoleIds.members : discordRoleIds[role];
+  if (discordRole) await guildMember.roles.add(discordRole);
 }
 
 async function isDiscordGuildMember(discordUserId) {
@@ -717,6 +1222,7 @@ app.get('/auth/discord/callback', async (request, response) => {
     const profileResponse = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `${token.token_type} ${token.access_token}` } });
     if (!profileResponse.ok) throw new Error('Discord profile request failed');
     const profile = await profileResponse.json();
+    const discordBio = typeof profile.bio === 'string' ? profile.bio : await getDiscordBio(token, profile.id);
     const isInDiscordGuild = await isDiscordGuildMember(profile.id);
     const discordRole = isInDiscordGuild ? await getDiscordGuildRole(profile.id) : null;
     const discordGuild = discordBot?.guilds.cache.get(discordGuildId);
@@ -736,6 +1242,7 @@ app.get('/auth/discord/callback', async (request, response) => {
         avatar: getProfileAvatar(profile),
         discordDisplayName: profile.global_name || profile.username,
         discordAvatar: getProfileAvatar(profile),
+        discordBio,
         role,
         isOwner,
         isInDiscordGuild,
@@ -750,9 +1257,10 @@ app.get('/auth/discord/callback', async (request, response) => {
         presence,
       };
       await membersCollection?.replaceOne({ id: member.id }, member, { upsert: true });
-    } else if (member.role !== role || member.isOwner !== isOwner || member.isInDiscordGuild !== isInDiscordGuild) {
-      member = { ...member, role, status: isInDiscordGuild ? (role === 'recruit' ? member.status : 'approved') : 'pending', isOwner, isInDiscordGuild };
-      await membersCollection?.updateOne({ id: member.id }, { $set: { role, status: member.status, isOwner, isInDiscordGuild } });
+    } else if (member.role !== (isInDiscordGuild ? role : (member.role || 'recruit')) || member.isOwner !== isOwner || member.isInDiscordGuild !== isInDiscordGuild) {
+      const syncedRole = isInDiscordGuild ? role : (member.role || 'recruit');
+      member = { ...member, role: syncedRole, status: isInDiscordGuild ? (role === 'recruit' ? member.status : 'approved') : 'pending', isOwner, isInDiscordGuild };
+      await membersCollection?.updateOne({ id: member.id }, { $set: { role: syncedRole, status: member.status, isOwner, isInDiscordGuild } });
     } else if (member.discordDisplayName !== (profile.global_name || profile.username) || member.discordAvatar !== getProfileAvatar(profile)) {
       member = {
         ...member,
@@ -762,14 +1270,19 @@ app.get('/auth/discord/callback', async (request, response) => {
       await membersCollection?.updateOne({ id: member.id }, { $set: { discordDisplayName: member.discordDisplayName, discordAvatar: member.discordAvatar } });
     }
     if (member) {
+      const syncedDiscordBio = discordBio || member.discordBio || '';
       const refreshedProfile = {
         discordDisplayName: profile.global_name || profile.username,
         discordAvatar: getProfileAvatar(profile),
+        displayName: profile.global_name || profile.username,
+        discordName: profile.discriminator && profile.discriminator !== '0' ? `${profile.username}#${profile.discriminator}` : profile.username,
+        avatar: getProfileAvatar(profile),
+        discordBio: syncedDiscordBio,
       };
       member = { ...member, ...refreshedProfile, presence, isOnline: presence !== 'offline' };
       await membersCollection?.updateOne({ id: member.id }, { $set: { ...refreshedProfile, presence, isOnline: presence !== 'offline' } });
     }
-    setSession(response, member);
+    setSession(response, member, token);
     response.redirect(`${appUrl}/?auth=success`);
   } catch (oauthError) {
     console.error('Discord OAuth error:', oauthError.message);
@@ -786,6 +1299,7 @@ app.get('/api/auth/me', async (request, response) => {
   const discordGuild = discordBot?.guilds.cache.get(discordGuildId);
   const discordGuildMember = isInDiscordGuild && discordGuild ? await discordGuild.members.fetch(member.discordId).catch(() => null) : null;
   const presence = discordGuildMember?.presence?.status || 'offline';
+  const hasHlGamingApiKey = Boolean((await getStoredHlGamingKey(member.id))?.apiKeyEncrypted);
   if (discordRole) {
     const refreshedMember = {
       ...member,
@@ -795,6 +1309,7 @@ app.get('/api/auth/me', async (request, response) => {
       isInDiscordGuild,
       presence,
       isOnline: presence !== 'offline',
+      hasHlGamingApiKey,
     };
     sessions.set(token, refreshedMember);
     try {
@@ -808,24 +1323,118 @@ app.get('/api/auth/me', async (request, response) => {
     }
     return response.json({ authenticated: true, member: refreshedMember });
   }
-  const refreshedMember = { ...member, role: 'recruit', isOwner: false, status: 'pending', isInDiscordGuild, presence, isOnline: false };
+  const refreshedMember = { ...member, role: member.role || 'recruit', isOwner: false, status: 'pending', isInDiscordGuild, presence, isOnline: false, hasHlGamingApiKey };
   sessions.set(token, refreshedMember);
   response.json({ authenticated: true, member: refreshedMember });
 });
 
 app.post('/api/auth/logout', (request, response) => {
-  const token = request.headers.cookie?.match(/guild_session=([^;]+)/)?.[1];
-  if (token) sessions.delete(token);
-  response.setHeader('Set-Cookie', ['guild_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0', 'guild_session_data=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0']);
+  const token = getSessionToken(request);
+  if (token) {
+    sessions.delete(token);
+    discordAccessTokens.delete(token);
+  }
+  const expiredCookieOptions = process.env.NODE_ENV === 'production' ? 'HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0' : 'HttpOnly; SameSite=Lax; Path=/; Max-Age=0';
+  response.setHeader('Set-Cookie', [`guild_session=; ${expiredCookieOptions}`, `guild_session_data=; ${expiredCookieOptions}`]);
   response.status(204).end();
 });
 
 app.get('/api/health', async (_request, response) => {
+  const [db, rankingDb, chatDb] = await Promise.all([
+    getDatabase(),
+    getRankingDatabase(),
+    getChatDatabase(),
+  ]);
+  const databases = {
+    primary: Boolean(db),
+    ranking: Boolean(rankingDb),
+    chat: Boolean(chatDb),
+  };
+  response.json({
+    database: databases.primary,
+    databases,
+    chatStorage: chatUsingPrimaryDatabase ? 'primary' : databases.chat ? 'dedicated' : 'local',
+    mongoConnected: Object.values(databases).every(Boolean),
+    status: Object.values(databases).every(Boolean) ? 'ok' : 'degraded',
+  });
+});
+
+app.get('/api/guild-profile', async (request, response) => {
+  const session = requireSession(request, response);
+  if (!session) return;
+  try {
+    const settingsDb = await getDatabase();
+    const savedSettings = settingsDb
+      ? await settingsDb.collection(collectionNames.settings).findOne({ id: 'guild' })
+      : getLocalDocuments(collectionNames.settings).find((item) => item.id === 'guild');
+    let uid = savedSettings?.guildOwnerUid || session.freeFireUid || session.application?.gameId || '';
+    let region = session.application?.region || process.env.HLGAMING_REGION || 'ind';
+    if (!uid) {
+      const savedMember = settingsDb
+        ? await settingsDb.collection(collectionNames.members).findOne({ id: session.id })
+        : getLocalDocuments(collectionNames.members).find((item) => item.id === session.id);
+      uid = savedMember?.freeFireUid || savedMember?.application?.gameId || '';
+      region = savedMember?.application?.region || region;
+    }
+    if (!uid) return response.status(400).json({ error: 'Link a Free Fire UID before loading guild details.' });
+    const profile = await getCachedGuildProfile(uid, region);
+    response.json(profile);
+  } catch (error) {
+    response.status(502).json({ error: error.message });
+  }
+});
+
+app.post('/api/guild-profile/refresh', async (request, response) => {
+  const session = requireStaff(request, response);
+  if (!session) return;
   try {
     const db = await getDatabase();
-    response.json({ database: Boolean(db), status: 'ok' });
-  } catch (_error) {
-    response.status(503).json({ database: false, status: 'error' });
+    const settings = db
+      ? await db.collection(collectionNames.settings).findOne({ id: 'guild' })
+      : getLocalDocuments(collectionNames.settings).find((item) => item.id === 'guild');
+    const uid = settings?.guildOwnerUid;
+    const region = process.env.HLGAMING_REGION || 'ind';
+    if (!uid) return response.status(400).json({ error: 'Set the Guild Owner Free Fire UID before refreshing.' });
+    const membersCollection = db?.collection(collectionNames.members);
+    const localMembers = getLocalDocuments(collectionNames.members);
+    const ownerMember = db
+      ? await membersCollection.findOne({ freeFireUid: uid }) || await membersCollection.findOne({ isOwner: true }) || await membersCollection.findOne({ role: 'admin' })
+      : localMembers.find((member) => member.freeFireUid === uid) || localMembers.find((member) => member.isOwner === true) || localMembers.find((member) => member.role === 'admin');
+    const cachedProfile = db
+      ? await db.collection(guildProfileCollection).findOne({ id: 'guild' })
+      : getLocalDocuments(guildProfileCollection).find((item) => item.id === 'guild');
+    const cachedOwnerStats = ownerMember?.stats || null;
+    let guildProfile = cachedProfile;
+    let ownerStats = null;
+    const refreshErrors = [];
+    try {
+      guildProfile = await fetchGuildProfile(uid, region, hlGamingGuildApiKey);
+    } catch (error) {
+      refreshErrors.push(`Guild profile: ${error.message}`);
+    }
+    try {
+      ownerStats = await fetchFreeFireStats(uid, region, hlGamingGuildApiKey);
+    } catch (error) {
+      refreshErrors.push(`Leader stats: ${error.message}`);
+    }
+    if (!guildProfile && !ownerStats) return response.status(502).json({ error: refreshErrors.join(' ') || 'Guild data is not available yet.' });
+    const ownerRecord = ownerStats ? { id: ownerMember?.id || 'guild-owner', memberId: ownerMember?.id || 'guild-owner', ...ownerStats, region } : null;
+    if (db) {
+      if (guildProfile && guildProfile !== cachedProfile) await db.collection(guildProfileCollection).replaceOne({ id: 'guild' }, guildProfile, { upsert: true });
+      if (ownerRecord) {
+        await db.collection(freeFireStatsCollection).replaceOne({ id: ownerRecord.id }, ownerRecord, { upsert: true });
+        if (ownerMember) await membersCollection.updateOne({ id: ownerMember.id }, { $set: { freeFireUid: uid, stats: ownerStats, lastFreeFireStatsRefreshAt: new Date().toISOString() } });
+      }
+    } else {
+      if (guildProfile && guildProfile !== cachedProfile) saveLocalDocument(guildProfileCollection, guildProfile);
+      if (ownerRecord) {
+        saveLocalDocument(freeFireStatsCollection, ownerRecord);
+        if (ownerMember) updateLocalDocument(collectionNames.members, ownerMember.id, { freeFireUid: uid, stats: ownerStats, lastFreeFireStatsRefreshAt: new Date().toISOString() });
+      }
+    }
+    response.json({ guildProfile, ownerStats: ownerStats || cachedOwnerStats, ownerMemberId: ownerMember?.id || null, refreshErrors });
+  } catch (error) {
+    response.status(502).json({ error: error.message });
   }
 });
 
@@ -839,13 +1448,199 @@ app.get('/api/:resource', async (request, response) => {
   }
   try {
     const db = await getResourceDatabase(request.params.resource);
-    if (!db) return response.json(getLocalDocuments(collectionName));
+    if (!db) return response.json(request.params.resource === 'members' ? await Promise.all(getLocalDocuments(collectionName).map(publicMemberWithKey)) : getLocalDocuments(collectionName));
     const documents = await db.collection(collectionName).find({}).toArray();
-    response.json(documents);
+    response.json(request.params.resource === 'members' ? await Promise.all(documents.map(publicMemberWithKey)) : documents);
   } catch (error) {
     console.warn(`MongoDB read unavailable, using local data: ${error.message}`);
     response.json(getLocalDocuments(collectionName));
   }
+});
+
+app.post('/api/members/:id/free-fire-stats', async (request, response) => {
+  const session = requireSession(request, response);
+  if (!session) return;
+  if (request.params.id !== session.id && session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Only the member or guild staff can refresh Free Fire stats.' });
+  const uid = String(request.body?.uid || session.freeFireUid || '').trim();
+  const region = String(request.body?.region || hlGamingRegion).trim().toLowerCase();
+  if (!/^\d{5,15}$/.test(uid)) return response.status(400).json({ error: 'A valid Free Fire UID is required.' });
+  try {
+    const memberDocument = await getDatabase().then((db) => db?.collection(collectionNames.members).findOne({ id: request.params.id })).catch(() => null)
+      || getLocalDocuments(collectionNames.members).find((item) => item.id === request.params.id);
+    const storedKey = await getStoredHlGamingKey(request.params.id);
+    const memberApiKey = decryptApiKey(storedKey?.apiKeyEncrypted) || decryptApiKey(memberDocument?.hlGamingApiKeyEncrypted) || hlGamingMemberApiKeys[0] || hlGamingApiKey;
+    const stats = await saveFreeFireStats(request.params.id, uid, region, memberApiKey);
+    const db = await getDatabase();
+    const changes = { freeFireUid: uid, stats, lastFreeFireStatsRefreshAt: new Date().toISOString() };
+    if (db) await db.collection(collectionNames.members).updateOne({ id: request.params.id }, { $set: changes });
+    else updateLocalDocument(collectionNames.members, request.params.id, changes);
+    response.json({ freeFireUid: uid, stats });
+  } catch (error) {
+    response.status(502).json({ error: error.message });
+  }
+});
+
+app.post('/api/members/:id/hl-gaming-key', async (request, response) => {
+  const session = requireSession(request, response);
+  if (!session) return;
+  if (request.params.id !== session.id && session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'You can only manage your own HL Gaming API key.' });
+  const apiKey = String(request.body?.apiKey || '').trim();
+  if (apiKey.length < 8) return response.status(400).json({ error: 'Enter a valid HL Gaming API key.' });
+  const member = await getDatabase().then((db) => db?.collection(collectionNames.members).findOne({ id: request.params.id })).catch(() => null)
+    || getLocalDocuments(collectionNames.members).find((item) => item.id === request.params.id);
+  const uid = String(member?.freeFireUid || member?.application?.gameId || '').trim();
+  if (!/^\d{5,15}$/.test(uid)) return response.status(400).json({ error: 'Add a Free Fire UID before saving an HL Gaming API key.' });
+  try {
+    await validateHlGamingApiKey(apiKey, uid, String(member?.application?.region || hlGamingRegion).toLowerCase());
+    const rankingDb = await getRankingDatabase();
+    if (!rankingDb) return response.status(503).json({ error: 'Ranking database is unavailable. The key was not stored.' });
+    const timestamp = new Date().toISOString();
+    await rankingDb.collection(hlGamingKeysCollection).replaceOne(
+      { memberId: request.params.id },
+      { memberId: request.params.id, uid, apiKeyEncrypted: encryptApiKey(apiKey), createdAt: timestamp, lastValidatedAt: timestamp, lastUsedAt: timestamp },
+      { upsert: true },
+    );
+    response.json({ saved: true, hasHlGamingApiKey: true });
+  } catch (error) {
+    await getRankingDatabase().then((db) => db?.collection(hlGamingKeysCollection).deleteOne({ memberId: request.params.id })).catch(() => undefined);
+    response.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/admin/hl-gaming-keys', async (request, response) => {
+  if (!requireStaff(request, response)) return;
+  const rankingDb = await getRankingDatabase();
+  const primaryDb = await getDatabase();
+  const [keys, config] = await Promise.all([
+    rankingDb ? rankingDb.collection(hlGamingKeysCollection).find({}).project({ _id: 0, apiKeyEncrypted: 0 }).toArray() : [],
+    getHlGamingConfig(),
+  ]);
+  const members = primaryDb ? await primaryDb.collection(collectionNames.members).find({}).project({ _id: 0, id: 1, displayName: 1, role: 1, freeFireUid: 1 }).toArray() : getLocalDocuments(collectionNames.members);
+  const memberById = new Map(members.map((member) => [member.id, member]));
+  const personalKeys = keys.map((key) => ({
+    ...key,
+    memberName: memberById.get(key.memberId)?.displayName || key.memberId,
+    role: memberById.get(key.memberId)?.role || 'other',
+    keyStatus: key.lastUsedAt ? 'active' : 'validated',
+  }));
+  response.json({
+    config: { maxMemberRefreshesPerKey: config.maxMemberRefreshesPerKey, roleSettings: config.roleSettings, automationSettings: config.automationSettings },
+    roleKeys: publicRoleKeys(config),
+    categories: {
+      guildLeader: { configured: Boolean(hlGamingGuildApiKey), key: maskApiKey(hlGamingGuildApiKey), source: 'HLGAMING_GUILD_API_KEY' },
+      sharedRoles: [
+        { role: 'coadmin', label: 'Acting Leader', configured: Boolean(hlGamingMemberApiKeys[0]), key: maskApiKey(hlGamingMemberApiKeys[0]), source: 'HLGAMING_MEMBER_API_KEY_1' },
+        { role: 'moderator', label: 'Elder', configured: Boolean(hlGamingMemberApiKeys[1]), key: maskApiKey(hlGamingMemberApiKeys[1]), source: 'HLGAMING_MEMBER_API_KEY_2' },
+      ],
+      personalByRole: {
+        admin: personalKeys.filter((key) => key.role === 'admin'),
+        coadmin: personalKeys.filter((key) => key.role === 'coadmin'),
+        moderator: personalKeys.filter((key) => key.role === 'moderator'),
+        member: personalKeys.filter((key) => key.role === 'member'),
+        other: personalKeys.filter((key) => !['admin', 'coadmin', 'moderator', 'member'].includes(key.role)),
+      },
+    },
+    keys: personalKeys,
+  });
+});
+
+app.post('/api/admin/hl-gaming-role-key', async (request, response) => {
+  if (!requireStaff(request, response)) return;
+  const role = String(request.body?.role || '');
+  const apiKey = String(request.body?.apiKey || '').trim();
+  if (!Object.prototype.hasOwnProperty.call(defaultRoleKeySettings, role)) return response.status(400).json({ error: 'Select a valid guild role.' });
+  if (apiKey.length < 8) return response.status(400).json({ error: 'Enter a valid HL Gaming API key.' });
+  const rankingDb = await getRankingDatabase();
+  if (!rankingDb) return response.status(503).json({ error: 'Ranking database is unavailable. The key was not stored.' });
+  const current = await rankingDb.collection(hlGamingConfigCollection).findOne({ id: 'settings' });
+  const roleApiKeys = { ...(current?.roleApiKeys || {}), [role]: encryptApiKey(apiKey) };
+  await rankingDb.collection(hlGamingConfigCollection).updateOne({ id: 'settings' }, { $set: { roleApiKeys, updatedAt: new Date().toISOString() }, $setOnInsert: { maxMemberRefreshesPerKey } }, { upsert: true });
+  response.json({ role, key: { configured: true, key: maskApiKey(apiKey), source: 'Website-managed encrypted key' } });
+});
+
+app.delete('/api/admin/hl-gaming-role-key/:role', async (request, response) => {
+  if (!requireStaff(request, response)) return;
+  if (!Object.prototype.hasOwnProperty.call(defaultRoleKeySettings, request.params.role)) return response.status(400).json({ error: 'Select a valid guild role.' });
+  const rankingDb = await getRankingDatabase();
+  if (!rankingDb) return response.status(503).json({ error: 'Ranking database is unavailable.' });
+  await rankingDb.collection(hlGamingConfigCollection).updateOne({ id: 'settings' }, { $unset: { [`roleApiKeys.${request.params.role}`]: '' }, $set: { updatedAt: new Date().toISOString() } });
+  response.status(204).end();
+});
+
+app.patch('/api/admin/hl-gaming-config', async (request, response) => {
+  if (!requireStaff(request, response)) return;
+  const value = Number(request.body?.maxMemberRefreshesPerKey);
+  if (!Number.isInteger(value) || value < 1 || value > 10000) return response.status(400).json({ error: 'The shared refresh maximum must be an integer from 1 to 10000.' });
+  const roleSettings = request.body?.roleSettings;
+  const automationSettings = request.body?.automationSettings;
+  if (roleSettings && typeof roleSettings !== 'object') return response.status(400).json({ error: 'Role settings must be an object.' });
+  if (automationSettings && typeof automationSettings !== 'object') return response.status(400).json({ error: 'Automation settings must be an object.' });
+  const rankingDb = await getRankingDatabase();
+  if (!rankingDb) return response.status(503).json({ error: 'Ranking database is unavailable.' });
+  const current = await getHlGamingConfig();
+  const nextRoleSettings = Object.fromEntries(Object.entries(defaultRoleKeySettings).map(([role, defaults]) => [role, { ...defaults, ...current.roleSettings[role], ...(roleSettings?.[role] || {}) }]));
+  const nextAutomationSettings = Object.fromEntries(Object.entries(defaultAutomationSettings).map(([role, defaults]) => [role, { ...defaults, ...current.automationSettings[role], ...(automationSettings?.[role] || {}), notifications: { ...defaults.notifications, ...current.automationSettings[role]?.notifications, ...automationSettings?.[role]?.notifications } }]));
+  for (const settings of Object.values(nextRoleSettings)) {
+    if (!Number.isInteger(Number(settings.refreshEveryDays)) || Number(settings.refreshEveryDays) < 1 || Number(settings.refreshEveryDays) > 365) return response.status(400).json({ error: 'Refresh days must be an integer from 1 to 365.' });
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(settings.refreshTime)) return response.status(400).json({ error: 'Refresh time must use HH:MM format.' });
+    if (!['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].includes(settings.refreshDay)) return response.status(400).json({ error: 'Refresh day is invalid.' });
+    if (!Number.isInteger(Number(settings.shareMemberCount)) || Number(settings.shareMemberCount) < 1 || Number(settings.shareMemberCount) > 100) return response.status(400).json({ error: 'Shared member count must be an integer from 1 to 100.' });
+  }
+  await rankingDb.collection(hlGamingConfigCollection).replaceOne({ id: 'settings' }, { id: 'settings', maxMemberRefreshesPerKey: value, roleSettings: nextRoleSettings, automationSettings: nextAutomationSettings, roleApiKeys: current.roleApiKeys || {}, updatedAt: new Date().toISOString() }, { upsert: true });
+  response.json({ maxMemberRefreshesPerKey: value, roleSettings: nextRoleSettings, automationSettings: nextAutomationSettings });
+});
+
+app.delete('/api/admin/hl-gaming-keys/:memberId', async (request, response) => {
+  if (!requireStaff(request, response)) return;
+  const rankingDb = await getRankingDatabase();
+  if (!rankingDb) return response.status(503).json({ error: 'Ranking database is unavailable.' });
+  await rankingDb.collection(hlGamingKeysCollection).deleteOne({ memberId: request.params.memberId });
+  response.status(204).end();
+});
+
+app.post('/api/admin/hl-gaming-key-reminder/:memberId', async (request, response) => {
+  const session = requireSession(request, response);
+  if (!session) return;
+  if (session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Admin or co-admin access required.' });
+  const db = await getDatabase();
+  const target = await db?.collection(collectionNames.members).findOne({ id: request.params.memberId })
+    || getLocalDocuments(collectionNames.members).find((item) => item.id === request.params.memberId);
+  if (!target) return response.status(404).json({ error: 'Member not found.' });
+  const storedKey = await getStoredHlGamingKey(target.id);
+  if (storedKey?.apiKeyEncrypted) return response.status(409).json({ error: 'This member already has an API key.' });
+  const reminder = 'Please add your HL Gaming API key in your website profile settings so your Free Fire data can refresh on schedule.';
+  const notifications = request.body?.notifications || { discord: true, website: false, device: true };
+  let discordSent = false;
+  let discordError = '';
+  if (notifications.discord !== false && discordBot && target.discordId) {
+    const guild = discordBot.guilds.cache.get(discordGuildId) || await discordBot.guilds.fetch(discordGuildId).catch(() => null);
+    const guildMember = guild ? await guild.members.fetch(target.discordId).catch(() => null) : null;
+    const discordUser = guildMember?.user || await discordBot.users.fetch(target.discordId).catch(() => null);
+    if (!discordUser) discordError = 'Discord user could not be found.';
+    else discordSent = await discordUser.send(reminder).then(() => true).catch((error) => { discordError = error.message; return false; });
+  } else if (notifications.discord !== false) {
+    discordError = !discordBot ? 'Discord bot is offline.' : 'Member has no Discord account ID.';
+  }
+  const chatMessage = {
+    id: `chat-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+    authorId: session.id,
+    authorName: session.displayName,
+    authorRole: session.role,
+    channel: 'dm',
+    recipientId: target.id,
+    seenBy: [],
+    content: reminder,
+    createdAt: new Date().toISOString(),
+  };
+  const websiteSent = notifications.website === true;
+  if (websiteSent) {
+    chatMessages.push(chatMessage);
+    if (chatMessages.length > 100) chatMessages.shift();
+    void persistChatMessage(chatMessage);
+    sendChatMessageToParticipants(chatMessage);
+  }
+  const deviceSent = notifications.device === true ? sendDeviceReminderToMember(target.id, reminder) : false;
+  response.json({ discordSent, websiteSent, deviceSent, discordError: discordSent || notifications.discord === false ? '' : discordError });
 });
 
 app.post('/api/:resource', async (request, response) => {
@@ -858,6 +1653,25 @@ app.post('/api/:resource', async (request, response) => {
   if (!session) return;
   if (request.params.resource === 'events' || request.params.resource === 'announcements' || request.params.resource === 'settings' || isRankingResource(request.params.resource)) {
     if (session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Admin or co-admin access required' });
+  }
+  if (request.params.resource === 'members' && document.application) {
+    const settingsDb = await getDatabase();
+    const settings = settingsDb
+      ? await settingsDb.collection(collectionNames.settings).findOne({ id: 'guild' })
+      : getLocalDocuments(collectionNames.settings).find((item) => item.id === 'guild');
+    const application = document.application;
+    if (settings?.strongVerification && (application.verificationMode !== 'strong' || !application.verificationCode || !application.verificationProofName)) {
+      return response.status(400).json({ error: 'Stronger Free Fire verification requires a profile code and proof screenshot.' });
+    }
+    if (getFreeFireStatsConfig()) {
+      try {
+        const stats = await saveFreeFireStats(document.id, String(application.gameId).trim(), String(application.region || hlGamingRegion).toLowerCase());
+        document.freeFireUid = stats.freeFireUid;
+        document.stats = stats;
+      } catch (error) {
+        return response.status(502).json({ error: `Free Fire UID could not be verified: ${error.message}` });
+      }
+    }
   }
   if (isRankingScoreResource(request.params.resource)) {
     try {
@@ -890,8 +1704,14 @@ app.patch('/api/:resource/:id', async (request, response) => {
   if (!collectionName) return response.status(404).json({ error: 'Unknown resource' });
   const changes = { ...(request.body || {}) };
   delete changes._id;
+  if (request.params.resource === 'members' && Object.prototype.hasOwnProperty.call(changes, 'hlGamingApiKey')) {
+    return response.status(400).json({ error: 'Use the HL Gaming API key endpoint to validate and save this key.' });
+  }
   const session = requireSession(request, response);
   if (!session) return;
+  if (request.params.resource === 'members' && request.params.id === session.id && ('bio' in changes || 'stats' in changes)) {
+    return response.status(403).json({ error: 'Only the Free Fire UID can be edited from the member profile.' });
+  }
   const changesRole = Object.prototype.hasOwnProperty.call(changes, 'role');
   const changesStatus = Object.prototype.hasOwnProperty.call(changes, 'status');
   const changesAnnouncement = request.params.resource === 'announcements';
@@ -900,21 +1720,32 @@ app.patch('/api/:resource/:id', async (request, response) => {
   const changesRanking = isRankingResource(request.params.resource);
   if (isRankingScoreResource(request.params.resource)) return response.status(405).json({ error: 'Ranking scores are immutable' });
   if (changesRole && session.role !== 'admin') return response.status(403).json({ error: 'Only the guild owner can manage roles' });
+  if (changesRole && !['admin', 'coadmin', 'moderator', 'member', 'recruit'].includes(changes.role)) return response.status(400).json({ error: 'Invalid member role.' });
   if (changesStatus && session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Admin or co-admin access required' });
   if ((changesAnnouncement || changesEvent || changesSettings) && session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Admin or co-admin access required' });
   if (changesRanking && session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Admin or co-admin access required' });
   try {
     const db = await getResourceDatabase(request.params.resource);
+    if (changesRole && request.params.resource === 'members' && roleMemberLimits[changes.role]) {
+      const members = db
+        ? await db.collection(collectionName).find({}).project({ id: 1, role: 1 }).toArray()
+        : getLocalDocuments(collectionName);
+      const assignedCount = members.filter((member) => member.id !== request.params.id && member.role === changes.role).length;
+      if (assignedCount >= roleMemberLimits[changes.role]) {
+        const roleNames = { admin: 'Guild Leader', coadmin: 'Acting Leader', moderator: 'Elder', member: 'Guild Member' };
+        return response.status(409).json({ error: `${roleNames[changes.role]} can contain only ${roleMemberLimits[changes.role]} member${roleMemberLimits[changes.role] === 1 ? '' : 's'}. Remove or change an existing ${roleNames[changes.role].toLowerCase()} first.` });
+      }
+    }
     if (db) await db.collection(collectionName).updateOne({ id: request.params.id }, { $set: changes });
     else updateLocalDocument(collectionName, request.params.id, changes);
     if (changesRole && request.params.resource === 'members') {
       await syncDiscordRole(request.params.id.replace(/^discord_/, ''), changes.role);
     }
-    response.json({ id: request.params.id, ...changes });
+    response.json(publicMember({ id: request.params.id, ...changes }));
   } catch (error) {
     console.warn(`MongoDB update unavailable, using local data: ${error.message}`);
     updateLocalDocument(collectionName, request.params.id, changes);
-    response.json({ id: request.params.id, ...changes });
+    response.json(publicMember({ id: request.params.id, ...changes }));
   }
 });
 
@@ -937,6 +1768,8 @@ app.delete('/api/:resource/:id', async (request, response) => {
 
 httpServer.listen(port, '0.0.0.0', () => {
   console.log(`MongoDB API listening on port ${port}`);
+  void refreshWeeklyFreeFireData();
+  setInterval(() => void refreshWeeklyFreeFireData(), 60 * 1000);
 });
 
 process.on('SIGINT', async () => {
