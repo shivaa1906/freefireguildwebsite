@@ -69,6 +69,7 @@ let chatMessagesLoaded = false;
 const webSocketSessions = new Map();
 const groupMessageMaxAge = 24 * 60 * 60 * 1000;
 const sessions = new Map();
+const sessionMaxAgeSeconds = 10 * 365 * 24 * 60 * 60;
 const discordAccessTokens = new Map();
 const oauthStates = new Set();
 const webSocketClients = new Set();
@@ -1075,7 +1076,7 @@ function setSession(response, member, discordToken) {
   if (discordToken) discordAccessTokens.set(token, discordToken);
   const encodedMember = Buffer.from(JSON.stringify(safeMember)).toString('base64url');
   const signature = crypto.createHmac('sha256', sessionSecret).update(encodedMember).digest('base64url');
-  const cookieOptions = `${process.env.NODE_ENV === 'production' ? 'HttpOnly; SameSite=None; Secure' : 'HttpOnly; SameSite=Lax'}; Path=/; Max-Age=604800`;
+  const cookieOptions = `${process.env.NODE_ENV === 'production' ? 'HttpOnly; SameSite=None; Secure' : 'HttpOnly; SameSite=Lax'}; Path=/; Max-Age=${sessionMaxAgeSeconds}`;
   response.setHeader('Set-Cookie', [`guild_session=${token}; ${cookieOptions}`, `guild_session_data=${encodedMember}.${signature}; ${cookieOptions}`]);
 }
 
