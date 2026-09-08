@@ -150,9 +150,9 @@ Deploy the Express API to Render and the Vite frontend to Netlify.
 1. Push this repository to GitHub.
 2. In Render, create a Blueprint from the repository. The existing `render.yaml` creates the `free-fire-guild-api` web service.
 3. In Render, set every `sync: false` value from `render.yaml`, including `APP_URL`. Set `APP_URL` to the final Netlify URL, for example `https://your-site.netlify.app`.
-4. Set `DISCORD_REDIRECT_URI` to `https://free-fire-guild-api.onrender.com/auth/discord/callback` and add that exact URL in Discord Developer Portal -> OAuth2 -> Redirects.
+4. Set `DISCORD_REDIRECT_URI` to `https://your-site.netlify.app/auth/discord/callback` and add that exact URL in Discord Developer Portal -> OAuth2 -> Redirects. Netlify proxies `/auth/*` to Render, so the browser keeps the session cookie on the Netlify domain.
 5. In Netlify, import the same repository. Netlify uses `netlify.toml`, runs `npm run build`, and publishes `dist`.
-6. In Netlify environment variables, set `VITE_BACKEND_URL` to the Render API URL, for example `https://free-fire-guild-api.onrender.com`.
+6. In Netlify environment variables, remove `VITE_BACKEND_URL` or leave it empty. The committed `netlify.toml` proxies `/api/*` and `/auth/*` to Render.
 7. Redeploy both services after setting the URLs. Test login, API health at `/api/health`, Discord OAuth, and WebSocket chat.
 
 Keep server secrets only in Render. `VITE_BACKEND_URL` is public configuration and is safe to expose in the frontend bundle.
