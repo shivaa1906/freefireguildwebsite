@@ -105,10 +105,17 @@ const defaultPreferences: DisplayPreferences = {
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const cachedMember = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('guild-auth-member') || 'null') as GuildMember | null;
+    } catch {
+      return null;
+    }
+  })();
   const [authLoading, setAuthLoading] = useState(true);
-  const [isAuthenticated, setAuthenticated] = useState(false);
-  const [member, setMember] = useState<GuildMember | null>(null);
-  const [view, setView] = useState<AppView>('landing');
+  const [isAuthenticated, setAuthenticated] = useState(Boolean(cachedMember));
+  const [member, setMember] = useState<GuildMember | null>(cachedMember);
+  const [view, setView] = useState<AppView>(cachedMember ? 'loading' : 'landing');
   const [composerTarget, setComposerTarget] = useState<ComposerTarget | null>(null);
   const [members, setMembers] = useState<GuildMember[]>(mockMembers);
   const [events, setEvents] = useState<GuildEvent[]>(mockEvents);
@@ -459,7 +466,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     fetch(`${BACKEND_URL}/api/auth/me`, { credentials: 'include' })
-      .then((response) => response.ok ? response.json() : null)
+      .then((response) => {
+        if (response.status === 401) {
+          localStorage.removeItem('guild-auth-member');
+          setAuthenticated(false);
+          setMember(null);
+          setView('landing');
+          return null;
+        }
+        if (!response.ok) throw new Error(`Auth check failed: ${response.status}`);
+        return response.json();
+      })
       .then((session) => {
         if (!session?.authenticated) return;
         const presence = session.member.isInDiscordGuild === false
@@ -471,11 +488,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...(presence ? { presence, isOnline: presence !== 'offline' } : {}),
         };
         setMember(normalizedMember);
+        localStorage.setItem('guild-auth-member', JSON.stringify(normalizedMember));
         setMembers((current) => [...current.filter((item) => item.id !== normalizedMember.id), normalizedMember]);
         setAuthenticated(true);
         setView(session.member.isInDiscordGuild === false ? 'pending' : 'loading');
       })
-      .catch(() => undefined)
+      .catch(() => {
+        // Keep the cached authenticated shell during short API interruptions or redeploys.
+        if (!cachedMember) {
+          setAuthenticated(false);
+          setMember(null);
+          setView('landing');
+        }
+      })
       .finally(() => {
         if (active) setAuthLoading(false);
       });
@@ -511,6 +536,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void fetch(`${BACKEND_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     setAuthenticated(false);
     setMember(null);
+    localStorage.removeItem('guild-auth-member');
     setView('landing');
   };
 
@@ -661,6 +687,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = async () => {
     await guildApi.deleteAccount();
     const deletedMemberId = member?.id;
+    localStorage.removeItem('guild-auth-member');
     setMembers((current) => deletedMemberId ? current.filter((item) => item.id !== deletedMemberId) : current);
     setMember(null);
     setAuthenticated(false);
