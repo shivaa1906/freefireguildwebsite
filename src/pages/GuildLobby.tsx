@@ -207,7 +207,7 @@ export function GuildLobby({ onNavigate }: GuildLobbyProps) {
                 <div className="flex items-center justify-between gap-4 mb-6">
                   <div>
                     <div className="hud-label mb-1">LIVE GUILD PROFILE · {guildProfile?.region || 'IND'}</div>
-                    <h2 className="font-display font-black text-2xl md:text-4xl text-white uppercase tracking-wider">{guildProfile?.guildName || 'Guild profile unavailable'}</h2>
+                    <h2 className="font-display font-black text-2xl md:text-4xl text-white uppercase tracking-wider">{guildProfile?.guildName || 'Guild profile is under maintenance'}</h2>
                   </div>
                   <RefreshCw size={22} className="text-tactical-400" aria-label="Weekly refresh cache" />
                 </div>
