@@ -63,6 +63,7 @@ const discordRoleNames = {
 };
 const discordRoleIds = {};
 const roleMemberLimits = { admin: 1, coadmin: 1, moderator: 3, member: 45 };
+const discordRoleSyncInProgress = new Set();
 const chatRoles = new Set(['admin', 'coadmin', 'moderator', 'member']);
 const chatMessages = [];
 let chatMessagesLoaded = false;
@@ -444,6 +445,7 @@ if (discordBot) {
   });
   discordBot.on(Events.GuildMemberUpdate, async (_oldMember, guildMember) => {
     if (guildMember.guild.id !== discordGuildId) return;
+    if (discordRoleSyncInProgress.has(guildMember.id)) return;
     let roleData = getDiscordRoleData(guildMember);
     const assignedRoleId = roleData.role === 'recruit' ? discordRoleIds.members : discordRoleIds[roleData.role];
     if (assignedRoleId && roleMemberLimits[roleData.role]) {
@@ -454,8 +456,6 @@ if (discordBot) {
         roleData = { role: 'recruit', isOwner: roleData.isOwner };
       }
     }
-    broadcast({ type: 'role', discordId: guildMember.id, ...roleData });
-    broadcast({ type: 'profile', discordId: guildMember.id, ...getDiscordProfileData(guildMember) });
     for (const [token, session] of sessions.entries()) {
       if (session.discordId !== guildMember.id) continue;
       sessions.set(token, {
@@ -470,8 +470,11 @@ if (discordBot) {
       const profileData = getDiscordProfileData(guildMember);
       await db?.collection(collectionNames.members).updateOne(
         { discordId: guildMember.id },
-        { $set: { ...profileData, role: roleData.role, isOwner: roleData.isOwner, ...(roleData.role === 'recruit' ? {} : { status: 'approved' }) } },
+        { $set: { ...profileData, role: roleData.role, isOwner: roleData.isOwner, status: roleData.role === 'recruit' ? 'pending' : 'approved', isInDiscordGuild: true } },
       );
+      updateLocalDocument(collectionNames.members, `discord_${guildMember.id}`, { ...profileData, role: roleData.role, isOwner: roleData.isOwner, status: roleData.role === 'recruit' ? 'pending' : 'approved', isInDiscordGuild: true });
+      broadcast({ type: 'role', discordId: guildMember.id, ...roleData });
+      broadcast({ type: 'profile', discordId: guildMember.id, ...profileData });
     } catch (_error) {
       // Role updates still reach connected clients immediately through WebSocket.
     }
@@ -1175,15 +1178,20 @@ async function syncDiscordRole(discordUserId, role) {
   if (!guild) return;
   const guildMember = await guild.members.fetch(discordUserId).catch(() => null);
   if (!guildMember) return;
-  const discordRole = role === 'recruit' ? discordRoleIds.members : discordRoleIds[role];
-  if (discordRole && roleMemberLimits[role]) {
-    const guildMembers = await guild.members.fetch();
-    const assignedCount = guildMembers.filter((member) => member.id !== discordUserId && member.roles.cache.has(discordRole)).size;
-    if (assignedCount >= roleMemberLimits[role]) throw new Error(`${role} Discord role is full.`);
+  discordRoleSyncInProgress.add(discordUserId);
+  try {
+    const discordRole = role === 'recruit' ? discordRoleIds.members : discordRoleIds[role];
+    if (discordRole && roleMemberLimits[role]) {
+      const guildMembers = await guild.members.fetch();
+      const assignedCount = guildMembers.filter((member) => member.id !== discordUserId && member.roles.cache.has(discordRole)).size;
+      if (assignedCount >= roleMemberLimits[role]) throw new Error(`${role} Discord role is full.`);
+    }
+    const managedRoleIds = Object.values(discordRoleIds).filter(Boolean);
+    await guildMember.roles.remove(managedRoleIds);
+    if (discordRole) await guildMember.roles.add(discordRole);
+  } finally {
+    setTimeout(() => discordRoleSyncInProgress.delete(discordUserId), 1000);
   }
-  const managedRoleIds = Object.values(discordRoleIds).filter(Boolean);
-  await guildMember.roles.remove(managedRoleIds);
-  if (discordRole) await guildMember.roles.add(discordRole);
 }
 
 async function isDiscordGuildMember(discordUserId) {
@@ -1800,6 +1808,12 @@ app.patch('/api/:resource/:id', async (request, response) => {
     }
     if (db) await db.collection(collectionName).updateOne({ id: request.params.id }, { $set: changes });
     else updateLocalDocument(collectionName, request.params.id, changes);
+    if (changesRole && request.params.resource === 'members') {
+      const assignedMember = db
+        ? await db.collection(collectionName).findOne({ id: request.params.id })
+        : getLocalDocuments(collectionName).find((member) => member.id === request.params.id);
+      broadcast({ type: 'role', discordId: assignedMember?.discordId, role: changes.role, isOwner: assignedMember?.isOwner });
+    }
     response.json(publicMember({ id: request.params.id, ...changes }));
   } catch (error) {
     if (changesRole && error.message.includes('full')) {
