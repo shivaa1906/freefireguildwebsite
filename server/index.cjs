@@ -456,6 +456,8 @@ if (discordBot) {
         roleData = { role: 'recruit', isOwner: roleData.isOwner };
       }
     }
+    broadcast({ type: 'role', discordId: guildMember.id, ...roleData });
+    broadcast({ type: 'profile', discordId: guildMember.id, ...getDiscordProfileData(guildMember) });
     for (const [token, session] of sessions.entries()) {
       if (session.discordId !== guildMember.id) continue;
       sessions.set(token, {
@@ -470,11 +472,8 @@ if (discordBot) {
       const profileData = getDiscordProfileData(guildMember);
       await db?.collection(collectionNames.members).updateOne(
         { discordId: guildMember.id },
-        { $set: { ...profileData, role: roleData.role, isOwner: roleData.isOwner, status: roleData.role === 'recruit' ? 'pending' : 'approved', isInDiscordGuild: true } },
+        { $set: { ...profileData, role: roleData.role, isOwner: roleData.isOwner, ...(roleData.role === 'recruit' ? {} : { status: 'approved' }) } },
       );
-      updateLocalDocument(collectionNames.members, `discord_${guildMember.id}`, { ...profileData, role: roleData.role, isOwner: roleData.isOwner, status: roleData.role === 'recruit' ? 'pending' : 'approved', isInDiscordGuild: true });
-      broadcast({ type: 'role', discordId: guildMember.id, ...roleData });
-      broadcast({ type: 'profile', discordId: guildMember.id, ...profileData });
     } catch (_error) {
       // Role updates still reach connected clients immediately through WebSocket.
     }
