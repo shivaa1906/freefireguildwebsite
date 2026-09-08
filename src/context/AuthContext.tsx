@@ -60,6 +60,7 @@ interface AuthState {
   updateGuildSettings: (settings: GuildSettings) => Promise<void>;
   updateDiscordServerUrl: (discordServerUrl: string) => Promise<void>;
   updateStrongVerification: (enabled: boolean) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   theme: 'dark' | 'bright';
   setTheme: (theme: 'dark' | 'bright') => void;
   guildStats: { totalMembers: number; onlineMembers: number };
@@ -657,6 +658,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setGuildSettings(updatedSettings);
   };
 
+  const deleteAccount = async () => {
+    await guildApi.deleteAccount();
+    const deletedMemberId = member?.id;
+    setMembers((current) => deletedMemberId ? current.filter((item) => item.id !== deletedMemberId) : current);
+    setMember(null);
+    setAuthenticated(false);
+    setView('landing');
+  };
+
   const createRankingTask = (task: RankingTask) => {
     setRankingTasks((current) => [task, ...current]);
     void guildApi.save('ranking-tasks', task).catch(() => setRankingError('Task could not be saved to the ranking database.'));
@@ -718,6 +728,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateGuildSettings,
         updateDiscordServerUrl,
         updateStrongVerification,
+        deleteAccount,
         theme,
         setTheme,
         guildStats,

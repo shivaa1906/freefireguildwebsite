@@ -1339,6 +1339,50 @@ app.post('/api/auth/logout', (request, response) => {
   response.status(204).end();
 });
 
+app.post('/api/auth/delete-account', async (request, response) => {
+  const token = getSessionToken(request);
+  const session = token ? sessions.get(token) : null;
+  if (!session) return response.status(401).json({ error: 'Authentication required' });
+  try {
+    const primaryDb = await getDatabase();
+    const rankingDb = await getRankingDatabase();
+    const chatDb = await getChatDatabase();
+    if (primaryDb) {
+      await primaryDb.collection(collectionNames.members).deleteOne({ id: session.id });
+      await primaryDb.collection(freeFireStatsCollection).deleteMany({ $or: [{ id: session.id }, { memberId: session.id }] });
+    } else {
+      removeLocalDocument(collectionNames.members, session.id);
+      localStore[freeFireStatsCollection] = getLocalDocuments(freeFireStatsCollection).filter((item) => item.id !== session.id && item.memberId !== session.id);
+      writeLocalStore();
+    }
+    if (rankingDb) {
+      await rankingDb.collection(collectionNames['ranking-scores']).deleteMany({ memberId: session.id });
+      await rankingDb.collection(hlGamingKeysCollection).deleteMany({ memberId: session.id });
+    } else {
+      localStore[collectionNames['ranking-scores']] = getLocalDocuments(collectionNames['ranking-scores']).filter((item) => item.memberId !== session.id);
+      localStore[hlGamingKeysCollection] = getLocalDocuments(hlGamingKeysCollection).filter((item) => item.memberId !== session.id);
+      writeLocalStore();
+    }
+    if (chatDb) {
+      await chatDb.collection('chat_messages').deleteMany({ $or: [{ authorId: session.id }, { recipientId: session.id }] });
+    } else {
+      localStore.chat_messages = getLocalDocuments('chat_messages').filter((item) => item.authorId !== session.id && item.recipientId !== session.id);
+      writeLocalStore();
+    }
+    for (const [sessionToken, activeSession] of sessions.entries()) {
+      if (activeSession.id === session.id) {
+        sessions.delete(sessionToken);
+        discordAccessTokens.delete(sessionToken);
+      }
+    }
+    const expiredCookieOptions = process.env.NODE_ENV === 'production' ? 'HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0' : 'HttpOnly; SameSite=Lax; Path=/; Max-Age=0';
+    response.setHeader('Set-Cookie', [`guild_session=; ${expiredCookieOptions}`, `guild_session_data=; ${expiredCookieOptions}`]);
+    response.status(204).end();
+  } catch (error) {
+    response.status(500).json({ error: `Account deletion failed: ${error.message}` });
+  }
+});
+
 app.get('/api/health', async (_request, response) => {
   const [db, rankingDb, chatDb] = await Promise.all([
     getDatabase(),

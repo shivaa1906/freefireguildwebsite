@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { EMPTY_MEMBER_STATS, ROLE_LABELS, ROLE_COLORS, type DiscordPresence, type MemberStats } from '@/types';
 import { GridBackground, ParticleField, Vignette } from '@/components/effects/VisualEffects';
-import { User, Award, Shield, Edit2, Save, X, Bell, Lock, Globe, ExternalLink, KeyRound } from 'lucide-react';
+import { User, Award, Shield, Edit2, Save, X, Bell, Lock, Globe, ExternalLink, KeyRound, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 export function ProfilePage() {
@@ -205,12 +205,26 @@ function getPresenceDotColor(presence: DiscordPresence | undefined): string {
 }
 
 export function SettingsPage() {
-  const { member, logout, theme, setTheme, preferences, updatePreference, previewNotificationSound, saveHlGamingApiKey } = useAuth();
+  const { member, logout, deleteAccount, theme, setTheme, preferences, updatePreference, previewNotificationSound, saveHlGamingApiKey } = useAuth();
   const customSoundInputRef = useRef<HTMLInputElement>(null);
   const [hlGamingApiKey, setHlGamingApiKey] = useState('');
   const [apiKeySaved, setApiKeySaved] = useState(false);
   const [apiKeyError, setApiKeyError] = useState('');
   const [showApiInstructions, setShowApiInstructions] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteAccountSaving, setDeleteAccountSaving] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState('');
+
+  const handleDeleteAccount = async () => {
+    setDeleteAccountSaving(true);
+    setDeleteAccountError('');
+    try {
+      await deleteAccount();
+    } catch (error) {
+      setDeleteAccountError(error instanceof Error ? error.message : 'Account could not be deleted.');
+      setDeleteAccountSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-ink-900 relative overflow-hidden pt-16">
@@ -333,6 +347,9 @@ export function SettingsPage() {
               <button onClick={logout} className="w-full p-3 bg-alert-500/10 border border-alert-500/30 text-alert-400 font-heading font-semibold text-sm uppercase tracking-wider hover:bg-alert-500/20 transition-all clip-tactical">
                 Sign Out
               </button>
+              <button onClick={() => { setDeleteAccountError(''); setDeleteConfirmOpen(true); }} className="w-full p-3 border border-alert-500/40 text-alert-300 font-heading font-semibold text-sm uppercase tracking-wider hover:bg-alert-500/10 transition-all clip-tactical flex items-center justify-center gap-2">
+                <Trash2 size={16} /> Delete Account
+              </button>
             </div>
           </div>
         </div>
@@ -369,6 +386,25 @@ export function SettingsPage() {
             </div>
             <div className="mt-7 flex justify-end">
               <button onClick={() => setShowApiInstructions(false)} className="btn-neon px-5 py-3">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" onClick={() => !deleteAccountSaving && setDeleteConfirmOpen(false)}>
+          <div className="absolute inset-0 bg-ink-950/85 backdrop-blur-sm" />
+          <div className="relative glass-panel clip-tactical-lg p-6 md:p-8 max-w-md w-full animate-scale-in" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-5">
+              <Trash2 size={22} className="text-alert-400 mt-1" />
+              <div>
+                <h2 className="font-display font-bold text-xl text-white uppercase tracking-wider">Delete Account?</h2>
+                <p className="mt-2 text-gray-400 font-heading leading-relaxed">This permanently deletes your website account, member card, chat history, ranking data, saved API key, and cached stats. This cannot be undone.</p>
+              </div>
+            </div>
+            {deleteAccountError && <div className="mb-4 font-mono text-xs text-alert-400">{deleteAccountError}</div>}
+            <div className="flex gap-3">
+              <button onClick={() => void handleDeleteAccount()} disabled={deleteAccountSaving} className="flex-1 bg-alert-500 px-4 py-3 font-heading font-semibold uppercase text-white clip-tactical disabled:opacity-60">{deleteAccountSaving ? 'Deleting...' : 'Confirm Delete'}</button>
+              <button onClick={() => setDeleteConfirmOpen(false)} disabled={deleteAccountSaving} className="flex-1 btn-outline">Cancel</button>
             </div>
           </div>
         </div>

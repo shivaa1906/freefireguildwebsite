@@ -18,6 +18,7 @@ async function requestHealth() {
 }
 
 export const guildApi = {
+  deleteAccount: () => request<void>('/auth/delete-account', { method: 'POST' }),
   health: requestHealth,
   guildProfile: <T>() => request<T>('/guild-profile'),
   refreshGuildProfile: <T>() => request<T>('/guild-profile/refresh', { method: 'POST' }),
