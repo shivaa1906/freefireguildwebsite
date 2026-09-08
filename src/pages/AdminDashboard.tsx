@@ -77,6 +77,11 @@ export function AdminDashboard() {
 
   useEffect(() => setSettingsDraft(guildSettings), [guildSettings]);
   useEffect(() => setDiscordServerUrlDraft(guildSettings.discordServerUrl || ''), [guildSettings.discordServerUrl]);
+  useEffect(() => {
+    if (!roleUpdateError) return;
+    const timeout = window.setTimeout(() => setRoleUpdateError(''), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [roleUpdateError]);
   useEffect(() => setStrongVerificationDraft(Boolean(guildSettings.strongVerification)), [guildSettings.strongVerification]);
 
   useEffect(() => {
