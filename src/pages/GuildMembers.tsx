@@ -30,7 +30,7 @@ export function GuildMembers({ members, onSelectMember }: GuildMembersProps) {
 
   const filtered = members.filter((m) => {
     if (roleFilter !== 'all' && m.role !== roleFilter) return false;
-    if (m.status !== 'approved' && m.role === 'recruit') return false;
+    if (m.status !== 'approved') return false;
     return matchesSearch(m, search);
   });
 

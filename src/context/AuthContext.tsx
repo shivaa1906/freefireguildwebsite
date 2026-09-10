@@ -45,6 +45,7 @@ interface AuthState {
   approveMember: (id: string) => void;
   rejectMember: (id: string) => void;
   suspendMember: (id: string) => Promise<void>;
+  unsuspendMember: (id: string) => Promise<void>;
   updateMemberRole: (id: string, role: UserRole) => Promise<void>;
   requestAccess: () => void;
   submitJoinApplication: (application: JoinApplication) => void;
@@ -311,9 +312,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!guildSettings.guildOwnerUid && !member?.freeFireUid && !member?.application?.gameId) return;
-    guildApi.guildProfile<GuildProfile>()
-      .then((profile) => {
-        setGuildProfile(profile);
+    guildApi.guildProfile<GuildProfile & { ownerMemberId?: string | null; ownerStats?: Partial<MemberStats> & { freeFireUid?: string } }>()
+      .then((profileResponse) => {
+        setGuildProfile(profileResponse);
+        const ownerStats = profileResponse.ownerStats;
+        if (profileResponse.ownerMemberId && ownerStats) {
+          setMembers((current) => current.map((item) => item.id === profileResponse.ownerMemberId
+            ? { ...item, freeFireUid: ownerStats.freeFireUid || guildSettings.guildOwnerUid, stats: { ...EMPTY_MEMBER_STATS, ...item.stats, ...ownerStats } }
+            : item));
+          setMember((current) => {
+            if (!current || current.id !== profileResponse.ownerMemberId) return current;
+            return {
+              ...current,
+              freeFireUid: ownerStats.freeFireUid || guildSettings.guildOwnerUid || current.freeFireUid,
+              stats: { ...EMPTY_MEMBER_STATS, ...current.stats, ...ownerStats },
+            };
+          });
+        }
         setGuildProfileError(null);
       })
       .catch((error: Error) => setGuildProfileError(error.message));
@@ -346,7 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data) as { type?: string; title?: string; content?: string; discordId?: string; status?: DiscordPresence; isOnline?: boolean; discordStatus?: string; role?: UserRole; isOwner?: boolean; displayName?: string; discordName?: string; discordDisplayName?: string; discordAvatar?: string; discordBio?: string; bio?: string; totalMembers?: number; onlineMembers?: number; chatMessage?: ChatMessage; messages?: ChatMessage[]; messageId?: string; typingUser?: ChatTypingUser; messageIdList?: string[]; readerId?: string; score?: RankingScore };
+      const message = JSON.parse(event.data) as { type?: string; title?: string; content?: string; discordId?: string; status?: DiscordPresence; memberStatus?: ApprovalStatus; isOnline?: boolean; discordStatus?: string; role?: UserRole; isOwner?: boolean; displayName?: string; discordName?: string; discordDisplayName?: string; discordAvatar?: string; discordBio?: string; bio?: string; totalMembers?: number; onlineMembers?: number; chatMessage?: ChatMessage; messages?: ChatMessage[]; messageId?: string; typingUser?: ChatTypingUser; messageIdList?: string[]; readerId?: string; score?: RankingScore };
       if (message.type === 'guild:stats' && typeof message.totalMembers === 'number' && typeof message.onlineMembers === 'number') {
         setGuildStats({ totalMembers: message.totalMembers, onlineMembers: message.onlineMembers });
         return;
@@ -419,10 +434,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
       if (message.type === 'role' && message.role) {
-        setMembers((current) => current.map((item) => item.discordId === message.discordId ? { ...item, role: message.role!, isOwner: message.isOwner, status: message.role === 'recruit' ? item.status : 'approved' } : item));
+        setMembers((current) => current.map((item) => item.discordId === message.discordId ? { ...item, role: message.role!, isOwner: message.isOwner, status: message.memberStatus || (message.role === 'recruit' ? item.status : 'approved') } : item));
         setMember((current) => {
           if (!current || current.discordId !== message.discordId) return current;
-          return { ...current, role: message.role!, isOwner: message.isOwner, status: message.role === 'recruit' ? current.status : 'approved' };
+          return { ...current, role: message.role!, isOwner: message.isOwner, status: message.memberStatus || (message.role === 'recruit' ? current.status : 'approved') };
         });
       }
       if (message.type === 'profile' && message.discordId) {
@@ -616,8 +631,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const suspendMember = async (id: string) => {
-    await guildApi.update<GuildMember>('members', id, { status: 'suspended' });
-    setMembers((current) => current.map((item) => item.id === id ? { ...item, status: 'suspended' } : item));
+    const updatedMember = await guildApi.update<GuildMember>('members', id, { status: 'suspended' });
+    setMembers((current) => current.map((item) => item.id === id ? { ...item, ...updatedMember, status: 'suspended', role: 'recruit' } : item));
+    setMember((current) => current?.id === id ? { ...current, ...updatedMember, status: 'suspended', role: 'recruit' } : current);
+  };
+
+  const unsuspendMember = async (id: string) => {
+    const updatedMember = await guildApi.update<GuildMember>('members', id, { status: 'approved' });
+    setMembers((current) => current.map((item) => item.id === id ? { ...item, ...updatedMember } : item));
+    setMember((current) => current?.id === id ? { ...current, ...updatedMember } : current);
   };
 
   const updateMemberRole = async (id: string, role: UserRole) => {
@@ -740,6 +762,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         approveMember,
         rejectMember,
         suspendMember,
+        unsuspendMember,
         updateMemberRole,
         requestAccess,
         submitJoinApplication,

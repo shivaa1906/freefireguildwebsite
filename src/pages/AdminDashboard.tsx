@@ -7,7 +7,7 @@ import { GridBackground, ParticleField, ScanLines, Vignette, AnimatedNumber } fr
 import { ForbiddenPage } from '@/pages/ErrorPages';
 import { Shield, Users, Clock, Ban, UserPlus, Search, Check, X, AlertTriangle, Settings, ChevronLeft, ChevronRight, MessageCircle, Trash2, Save, RotateCcw, KeyRound, RefreshCw, Bell } from 'lucide-react';
 
-type AdminTab = 'overview' | 'pending' | 'members' | 'chat' | 'apiKeys' | 'settings';
+type AdminTab = 'overview' | 'pending' | 'suspended' | 'members' | 'chat' | 'apiKeys' | 'settings';
 type MonitoredKey = { memberId: string; memberName: string; role: string; uid: string; createdAt: string; lastValidatedAt?: string; lastUsedAt?: string; keyStatus: string };
 type RoleKey = 'guildLeader' | 'coadmin' | 'moderator' | 'member' | 'members';
 type RoleKeySettings = { refreshEveryDays: number; refreshDay: string; refreshTime: string; shareMemberCount: number };
@@ -26,7 +26,7 @@ type HlGamingKeyMonitor = {
 };
 
 export function AdminDashboard() {
-  const { member, members, chatMessages, deleteChatMessage, refreshChatMessages, guildSettings, updateGuildSettings, updateDiscordServerUrl, updateStrongVerification, approveMember, rejectMember, suspendMember, updateMemberRole } = useAuth();
+  const { member, members, chatMessages, deleteChatMessage, refreshChatMessages, guildSettings, updateGuildSettings, updateDiscordServerUrl, updateStrongVerification, approveMember, rejectMember, suspendMember, unsuspendMember, updateMemberRole } = useAuth();
   const [tab, setTab] = useState<AdminTab>('overview');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
@@ -245,7 +245,7 @@ export function AdminDashboard() {
 
     const filteredMembers = members.filter((m) => {
     if (roleFilter !== 'all' && m.role !== roleFilter) return false;
-      if (m.status !== 'approved' && !isNonGuildMember(m)) return false;
+      if (m.status !== 'approved') return false;
     if (search && !m.displayName.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -262,6 +262,7 @@ export function AdminDashboard() {
   const tabs: { id: AdminTab; label: string; icon: typeof Shield; badge?: number }[] = [
     { id: 'overview', label: 'Overview', icon: Shield },
     { id: 'pending', label: 'Pending', icon: Clock, badge: pendingMembers.length },
+    { id: 'suspended', label: 'Suspended', icon: Ban, badge: suspendedMembers.length },
     { id: 'members', label: 'Members', icon: Users },
     ...(canMonitorChat ? [{ id: 'chat' as AdminTab, label: 'Chat Monitor', icon: MessageCircle }] : []),
     { id: 'apiKeys', label: 'API Key Monitor', icon: KeyRound },
@@ -396,6 +397,20 @@ export function AdminDashboard() {
           )}
 
           {/* Members management */}
+          {tab === 'suspended' && (
+            <div className="space-y-4 animate-fade-in-up">
+              {suspendedMembers.length === 0 && <div className="text-center py-20"><Check size={48} className="text-success-500 mx-auto mb-4" /><div className="font-mono text-sm text-gray-500">NO SUSPENDED MEMBERS</div></div>}
+              {suspendedMembers.map((m) => (
+                <div key={m.id} className="tactical-card p-4 flex items-center gap-4 flex-wrap">
+                  <img src={m.avatar} alt={m.displayName} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.displayName)}&background=f5a623&color=111827&size=200`; }} className="w-10 h-10 rounded-full object-cover border border-alert-500/40" />
+                  <div className="flex-1 min-w-0"><div className="font-heading font-semibold text-white">{m.displayName}</div><div className="font-mono text-xs text-gray-500">{m.discordName}</div></div>
+                  <span className="border-2 border-alert-500 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-alert-400 rotate-[-4deg]">Suspended</span>
+                  <button onClick={() => void unsuspendMember(m.id)} className="px-3 py-2 bg-success-500/10 border border-success-500/30 text-success-400 font-heading font-semibold text-xs uppercase hover:bg-success-500/20 transition-all clip-tactical">Unsuspend</button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {tab === 'members' && (
             <div className="space-y-4 animate-fade-in-up">
               <div className="flex flex-col md:flex-row gap-4">
@@ -721,6 +736,3 @@ export function AdminDashboard() {
   );
 }
 
-function isNonGuildMember(member: GuildMember) {
-  return member.role === 'recruit';
-}

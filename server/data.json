@@ -20,5 +20,19 @@
       "content": "hello",
       "createdAt": "2026-09-08T11:58:21.437Z"
     }
+  ],
+  "guild_profile": [
+    {
+      "id": "guild",
+      "guildId": "3053973581",
+      "guildName": "SQUADEㅤL4X",
+      "guildLevel": 4,
+      "capacity": 35,
+      "memberCount": 12,
+      "ownerId": "2300346108",
+      "ownerName": "Unknown",
+      "region": "IND",
+      "refreshedAt": "2026-09-09T05:35:22.711Z"
+    }
   ]
 }

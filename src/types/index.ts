@@ -86,6 +86,8 @@ export interface GuildMember {
   presence?: DiscordPresence;
   isOwner?: boolean;
   isInDiscordGuild?: boolean;
+  suspendedFromRole?: UserRole;
+  discordLeftAt?: string;
   application?: JoinApplication;
 }
 

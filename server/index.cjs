@@ -27,7 +27,7 @@ const hlGamingAccountApiUrl = process.env.HLGAMING_ACCOUNT_API_URL || 'https://p
 const hlGamingStatsApiUrl = process.env.HLGAMING_STATS_API_URL || 'https://proapis.hlgamingofficial.com/main/games/freefire/stats/api';
 const hlGamingUserUid = envValue('HLGAMING_USER_UID');
 const hlGamingApiKey = envValue('HLGAMING_API_KEY');
-const hlGamingGuildApiKey = envValue('HLGAMING_GUILD_API_KEY') || hlGamingApiKey;
+const hlGamingGuildApiKey = hlGamingApiKey;
 const hlGamingMemberApiKeys = [envValue('HLGAMING_MEMBER_API_KEY_1'), envValue('HLGAMING_MEMBER_API_KEY_2')].filter(Boolean);
 const hlGamingRegion = process.env.HLGAMING_REGION || 'ind';
 const maxMemberRefreshesPerKey = Number(process.env.HLGAMING_MAX_MEMBER_REFRESHES_PER_KEY || 10);
@@ -64,6 +64,8 @@ const discordRoleNames = {
 const discordRoleIds = {};
 const roleMemberLimits = { admin: 1, coadmin: 1, moderator: 3, member: 45 };
 const discordRoleSyncInProgress = new Set();
+const discordDepartureTimers = new Map();
+const discordDepartureGraceMs = 60 * 60 * 1000;
 const chatRoles = new Set(['admin', 'coadmin', 'moderator', 'member']);
 const chatMessages = [];
 let chatMessagesLoaded = false;
@@ -399,6 +401,7 @@ if (discordBot) {
     if (discordGuildId && !client.guilds.cache.has(discordGuildId)) {
       console.warn(`Discord bot is not connected to guild ${discordGuildId}`);
     }
+    await restoreDiscordDepartureTimers();
     void maybeSendWeeklyReport();
     setInterval(() => void maybeSendWeeklyReport(), 60 * 1000);
   });
@@ -470,13 +473,21 @@ if (discordBot) {
     try {
       const db = await getDatabase();
       const profileData = getDiscordProfileData(guildMember);
+      const linkedMember = await db?.collection(collectionNames.members).findOne({ discordId: guildMember.id });
+      if (!linkedMember && roleData.role !== 'recruit') {
+        await guildMember.send(`Your Discord guild role is ready. Log in to the guild website to activate your profile: ${appUrl}`).catch(() => undefined);
+      }
       await db?.collection(collectionNames.members).updateOne(
         { discordId: guildMember.id },
-        { $set: { ...profileData, role: roleData.role, isOwner: roleData.isOwner, ...(roleData.role === 'recruit' ? {} : { status: 'approved' }) } },
+        { $set: { ...profileData, role: roleData.role, isOwner: roleData.isOwner, isInDiscordGuild: true, discordLeftAt: null, ...(roleData.role === 'recruit' ? {} : { status: 'approved' }) } },
       );
     } catch (_error) {
       // Role updates still reach connected clients immediately through WebSocket.
     }
+  });
+  discordBot.on(Events.GuildMemberRemove, async (guildMember) => {
+    if (guildMember.guild.id !== discordGuildId) return;
+    await markDiscordMemberAbsent(guildMember.id);
   });
   discordBot.on(Events.Error, (error) => console.error('Discord bot error:', error.message));
   discordBot.login(discordBotToken).catch((error) => console.error('Discord bot login failed:', error.message));
@@ -815,7 +826,7 @@ async function fetchFreeFireStats(uid, region, apiKey = hlGamingApiKey) {
   });
   const [accountResponse, statsResponse] = await Promise.all([
     fetch(hlGamingAccountApiUrl, requestOptions({ sectionName: 'AllData', PlayerUid: uid, region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey })),
-    fetch(hlGamingStatsApiUrl, requestOptions({ uid, region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey })),
+    fetch(hlGamingStatsApiUrl, requestOptions({ sectionName: 'free_fire_stats', uid: String(uid), region: region.toUpperCase(), useruid: hlGamingUserUid, api: apiKey })),
   ]);
   if (!accountResponse.ok) throw new Error(`HL Gaming account API returned HTTP ${accountResponse.status}`);
   if (!statsResponse.ok) throw new Error(`HL Gaming stats API returned HTTP ${statsResponse.status}`);
@@ -886,8 +897,8 @@ async function refreshWeeklyFreeFireData() {
   const { maxMemberRefreshesPerKey: configuredMaxMemberRefreshes } = config;
   try {
     const [guildProfile, ownerStats] = await Promise.all([
-      fetchGuildProfile(ownerUid, region, websiteRoleKeys.guildLeader || hlGamingGuildApiKey),
-      fetchFreeFireStats(ownerUid, region, websiteRoleKeys.guildLeader || hlGamingGuildApiKey),
+      fetchGuildProfile(ownerUid, region, hlGamingApiKey),
+      fetchFreeFireStats(ownerUid, region, hlGamingApiKey),
     ]);
     if (db) {
       await db.collection(guildProfileCollection).replaceOne({ id: 'guild' }, guildProfile, { upsert: true });
@@ -1193,6 +1204,46 @@ async function syncDiscordRole(discordUserId, role) {
   }
 }
 
+async function markDiscordMemberAbsent(discordUserId) {
+  const db = await getDatabase();
+  const member = await db?.collection(collectionNames.members).findOne({ discordId: discordUserId });
+  if (!member) return;
+  const discordLeftAt = member.discordLeftAt || new Date().toISOString();
+  await db?.collection(collectionNames.members).updateOne(
+    { id: member.id },
+    { $set: { isInDiscordGuild: false, presence: 'offline', isOnline: false, discordLeftAt } },
+  );
+  broadcast({ type: 'presence', discordId: discordUserId, status: 'offline', isOnline: false });
+  scheduleDiscordMemberCleanup(member.id, discordUserId, discordLeftAt);
+}
+
+function scheduleDiscordMemberCleanup(memberId, discordUserId, discordLeftAt) {
+  if (discordDepartureTimers.has(memberId)) return;
+  const remaining = Math.max(0, Date.parse(discordLeftAt) + discordDepartureGraceMs - Date.now());
+  const timer = setTimeout(async () => {
+    discordDepartureTimers.delete(memberId);
+    const db = await getDatabase();
+    const member = await db?.collection(collectionNames.members).findOne({ id: memberId });
+    if (!member || member.isInDiscordGuild !== false || member.discordLeftAt !== discordLeftAt) return;
+    await db?.collection(collectionNames.members).updateOne(
+      { id: memberId },
+      { $set: { role: 'recruit', status: 'pending', isInDiscordGuild: false, discordLeftAt } },
+    );
+    for (const [token, session] of sessions.entries()) {
+      if (session.id !== memberId) continue;
+      sessions.set(token, { ...session, role: 'recruit', status: 'pending', isInDiscordGuild: false });
+    }
+    broadcast({ type: 'role', discordId: discordUserId, role: 'recruit', isOwner: false });
+  }, remaining);
+  discordDepartureTimers.set(memberId, timer);
+}
+
+async function restoreDiscordDepartureTimers() {
+  const db = await getDatabase();
+  const departedMembers = await db?.collection(collectionNames.members).find({ isInDiscordGuild: false, discordLeftAt: { $exists: true } }).toArray();
+  for (const member of departedMembers || []) scheduleDiscordMemberCleanup(member.id, member.discordId, member.discordLeftAt);
+}
+
 async function isDiscordGuildMember(discordUserId) {
   if (!discordBotToken || !discordGuildId) return true;
   try {
@@ -1316,6 +1367,11 @@ app.get('/api/auth/me', async (request, response) => {
   const token = request.headers.cookie?.match(/guild_session=([^;]+)/)?.[1];
   const member = token ? sessions.get(token) : null;
   if (!member) return response.status(401).json({ authenticated: false });
+  if (member.status === 'suspended') {
+    sessions.delete(token);
+    discordAccessTokens.delete(token);
+    return response.status(401).json({ authenticated: false, reason: 'suspended' });
+  }
   const isInDiscordGuild = await isDiscordGuildMember(member.discordId);
   const discordRole = isInDiscordGuild ? await getDiscordGuildRole(member.discordId) : null;
   const discordGuild = discordBot?.guilds.cache.get(discordGuildId);
@@ -1444,7 +1500,22 @@ app.get('/api/guild-profile', async (request, response) => {
     }
     if (!uid) return response.status(400).json({ error: 'Link a Free Fire UID before loading guild details.' });
     const profile = await getCachedGuildProfile(uid, region);
-    response.json(profile);
+    const ownerMember = settingsDb
+      ? await settingsDb.collection(collectionNames.members).findOne({ $or: [{ freeFireUid: uid }, { isOwner: true }, { role: 'admin' }] })
+      : getLocalDocuments(collectionNames.members).find((item) => item.freeFireUid === uid || item.isOwner === true || item.role === 'admin');
+    let ownerStats = ownerMember?.stats || null;
+    const statsRefreshAt = Date.parse(ownerMember?.lastFreeFireStatsRefreshAt || '');
+    if (!statsRefreshAt || Date.now() - statsRefreshAt >= guildProfileRefreshMs) {
+      try {
+        ownerStats = await fetchFreeFireStats(uid, region, hlGamingApiKey);
+        const statsChanges = { freeFireUid: uid, stats: ownerStats, lastFreeFireStatsRefreshAt: new Date().toISOString() };
+        if (settingsDb && ownerMember) await settingsDb.collection(collectionNames.members).updateOne({ id: ownerMember.id }, { $set: statsChanges });
+        else if (ownerMember) updateLocalDocument(collectionNames.members, ownerMember.id, statsChanges);
+      } catch (statsError) {
+        console.warn(`Guild owner stats refresh failed: ${statsError.message}`);
+      }
+    }
+    response.json({ ...profile, ownerMemberId: ownerMember?.id || null, ownerStats });
   } catch (error) {
     response.status(502).json({ error: error.message });
   }
@@ -1474,12 +1545,12 @@ app.post('/api/guild-profile/refresh', async (request, response) => {
     let ownerStats = null;
     const refreshErrors = [];
     try {
-      guildProfile = await fetchGuildProfile(uid, region, hlGamingGuildApiKey);
+      guildProfile = await fetchGuildProfile(uid, region, hlGamingApiKey);
     } catch (error) {
       refreshErrors.push(`Guild profile: ${error.message}`);
     }
     try {
-      ownerStats = await fetchFreeFireStats(uid, region, hlGamingGuildApiKey);
+      ownerStats = await fetchFreeFireStats(uid, region, hlGamingApiKey);
     } catch (error) {
       refreshErrors.push(`Leader stats: ${error.message}`);
     }
@@ -1593,7 +1664,7 @@ app.get('/api/admin/hl-gaming-keys', async (request, response) => {
     config: { maxMemberRefreshesPerKey: config.maxMemberRefreshesPerKey, roleSettings: config.roleSettings, automationSettings: config.automationSettings },
     roleKeys: publicRoleKeys(config),
     categories: {
-      guildLeader: { configured: Boolean(hlGamingGuildApiKey), key: maskApiKey(hlGamingGuildApiKey), source: 'HLGAMING_GUILD_API_KEY' },
+      guildLeader: { configured: Boolean(hlGamingApiKey), key: maskApiKey(hlGamingApiKey), source: 'HLGAMING_API_KEY' },
       sharedRoles: [
         { role: 'coadmin', label: 'Acting Leader', configured: Boolean(hlGamingMemberApiKeys[0]), key: maskApiKey(hlGamingMemberApiKeys[0]), source: 'HLGAMING_MEMBER_API_KEY_1' },
         { role: 'moderator', label: 'Elder', configured: Boolean(hlGamingMemberApiKeys[1]), key: maskApiKey(hlGamingMemberApiKeys[1]), source: 'HLGAMING_MEMBER_API_KEY_2' },
@@ -1778,7 +1849,7 @@ app.patch('/api/:resource/:id', async (request, response) => {
   if (request.params.resource === 'members' && request.params.id === session.id && ('bio' in changes || 'stats' in changes)) {
     return response.status(403).json({ error: 'Only the Free Fire UID can be edited from the member profile.' });
   }
-  const changesRole = Object.prototype.hasOwnProperty.call(changes, 'role');
+  let changesRole = Object.prototype.hasOwnProperty.call(changes, 'role');
   const changesStatus = Object.prototype.hasOwnProperty.call(changes, 'status');
   const changesAnnouncement = request.params.resource === 'announcements';
   const changesEvent = request.params.resource === 'events';
@@ -1792,6 +1863,19 @@ app.patch('/api/:resource/:id', async (request, response) => {
   if (changesRanking && session.role !== 'admin' && session.role !== 'coadmin') return response.status(403).json({ error: 'Admin or co-admin access required' });
   try {
     const db = await getResourceDatabase(request.params.resource);
+    const existingMember = request.params.resource === 'members'
+      ? (db ? await db.collection(collectionName).findOne({ id: request.params.id }) : getLocalDocuments(collectionName).find((member) => member.id === request.params.id))
+      : null;
+    if (request.params.resource === 'members' && changes.status === 'suspended' && existingMember && existingMember.role !== 'recruit') {
+      changes.suspendedFromRole = existingMember.role;
+      changes.role = 'recruit';
+      changesRole = true;
+    }
+    if (request.params.resource === 'members' && changes.status === 'approved' && existingMember?.status === 'suspended') {
+      changes.role = existingMember.suspendedFromRole || 'member';
+      changes.suspendedFromRole = null;
+      changesRole = true;
+    }
     if (changesRole && request.params.resource === 'members' && roleMemberLimits[changes.role]) {
       const members = db
         ? await db.collection(collectionName).find({}).project({ id: 1, role: 1 }).toArray()
@@ -1805,13 +1889,24 @@ app.patch('/api/:resource/:id', async (request, response) => {
     if (changesRole && request.params.resource === 'members') {
       await syncDiscordRole(request.params.id.replace(/^discord_/, ''), changes.role);
     }
-    if (db) await db.collection(collectionName).updateOne({ id: request.params.id }, { $set: changes });
-    else updateLocalDocument(collectionName, request.params.id, changes);
+    if (db) {
+      const update = { $set: changes };
+      if (changes.suspendedFromRole === null) update.$unset = { suspendedFromRole: '' };
+      await db.collection(collectionName).updateOne({ id: request.params.id }, update);
+    } else updateLocalDocument(collectionName, request.params.id, changes);
+    if (request.params.resource === 'members' && changesRole && existingMember?.isInDiscordGuild === false) {
+      const discordLeftAt = existingMember.discordLeftAt || new Date().toISOString();
+      if (!existingMember.discordLeftAt) {
+        if (db) await db.collection(collectionName).updateOne({ id: request.params.id }, { $set: { discordLeftAt } });
+        else updateLocalDocument(collectionName, request.params.id, { discordLeftAt });
+      }
+      scheduleDiscordMemberCleanup(request.params.id, existingMember.discordId, discordLeftAt);
+    }
     if (changesRole && request.params.resource === 'members') {
       const assignedMember = db
         ? await db.collection(collectionName).findOne({ id: request.params.id })
         : getLocalDocuments(collectionName).find((member) => member.id === request.params.id);
-      broadcast({ type: 'role', discordId: assignedMember?.discordId, role: changes.role, isOwner: assignedMember?.isOwner });
+      broadcast({ type: 'role', discordId: assignedMember?.discordId, role: changes.role, isOwner: assignedMember?.isOwner, memberStatus: changes.status });
     }
     response.json(publicMember({ id: request.params.id, ...changes }));
   } catch (error) {
