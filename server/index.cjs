@@ -97,6 +97,7 @@ if (isProduction) {
   if (!configuredSessionSecret || configuredSessionSecret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters in production.');
   if (!appUrl.startsWith('https://')) throw new Error('APP_URL must use HTTPS in production.');
   if (!discordRedirectUri.startsWith('https://')) throw new Error('DISCORD_REDIRECT_URI must use HTTPS in production.');
+  if (discordRedirectUri !== `${appUrl}/auth/discord/callback`) throw new Error('DISCORD_REDIRECT_URI must be the Netlify callback URL: `${APP_URL}/auth/discord/callback`.');
   if (!mongoUrl || !rankingMongoUrl || !chatMongoUrl) throw new Error('MONGODB_URI, MONGODB_URI_2, and MONGODB_URI_3 are required in production.');
 }
 const allowedOrigins = new Set([appUrl, 'http://localhost:5173']);
@@ -2170,6 +2171,8 @@ async function processDiscordDepartures() {
 
 async function isDiscordGuildMember(discordUserId) {
   if (!discordBotToken || !discordGuildId) return true;
+  const cachedGuildMember = discordBot?.guilds.cache.get(discordGuildId)?.members.cache.get(discordUserId);
+  if (cachedGuildMember) return true;
   try {
     const response = await fetch(`https://discord.com/api/guilds/${discordGuildId}/members/${discordUserId}`, {
       headers: { Authorization: `Bot ${discordBotToken}` },
@@ -2180,7 +2183,7 @@ async function isDiscordGuildMember(discordUserId) {
     return true;
   } catch (error) {
     console.warn(`Discord membership check unavailable: ${error.message}`);
-    return false;
+    return true;
   }
 }
 

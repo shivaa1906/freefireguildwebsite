@@ -356,7 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, member]);
 
   useEffect(() => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const backendUrl = import.meta.env.PROD ? '' : import.meta.env.VITE_BACKEND_URL?.trim();
     const socketUrl = backendUrl
       ? `${backendUrl.replace(/^http/, 'ws')}/ws`
       : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
