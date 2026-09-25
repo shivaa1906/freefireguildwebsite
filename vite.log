@@ -1,0 +1,13 @@
+
+> vite-react-typescript-starter@0.0.0 dev
+> vite --port 5173
+
+
+  VITE v5.4.8  ready in 189 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://172.20.10.3:5173/
+  ➜  Network: http://172.18.0.1:5173/
+Browserslist: caniuse-lite is outdated. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme

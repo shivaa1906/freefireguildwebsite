@@ -1,0 +1,13 @@
+
+> vite-react-typescript-starter@0.0.0 api
+> node server/index.cjs
+
+◇ injected env (25) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+MongoDB API listening on port 3001
+Discord bot online as SQUADE L4X !!#9272
+Discord role ready: Guild Leader
+Discord role ready: Guild Acting Leader
+Discord role ready: Guild Elder
+Discord role ready: Guild Members
+Discord role ready: Non Guild Members
+Chat MongoDB unavailable, using local mirror for 30s: Chat MongoDB connection timed out
