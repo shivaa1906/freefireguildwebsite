@@ -239,7 +239,13 @@ The redirect URL must match exactly in both places:
 http://localhost:3001/auth/discord/callback
 ```
 
-Check for differences in port, protocol, path, or trailing slash.
+For a tunneled local session, replace that value with the current public URL, for example:
+
+```text
+https://your-tunnel.ngrok-free.dev/auth/discord/callback
+```
+
+Add the same exact URL under Discord Developer Portal -> OAuth2 -> General -> Redirects, then restart the API. Check for differences in hostname, port, protocol, path, or trailing slash. The tunnel must forward to the Vite port (`5173`), not the API port.
 
 ### MongoDB health check times out
 

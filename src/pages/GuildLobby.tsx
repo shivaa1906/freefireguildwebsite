@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth, type AppView } from '@/context/AuthContext';
 import { GridBackground, ParticleField, ScanLines, Vignette, HudCorners } from '@/components/effects/VisualEffects';
-import { mockMapLocations } from '@/data/mockData';
 import { Building2, Users, Shirt, Trophy, Megaphone, MessageCircle, ChevronRight, Crown, Hash, RefreshCw } from 'lucide-react';
 import type { MapLocation } from '@/types';
 
@@ -23,9 +22,7 @@ export function GuildLobby({ onNavigate }: GuildLobbyProps) {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const visibleLocations = mockMapLocations.filter(
-    (loc) => !loc.adminOnly || member?.role === 'admin'
-  );
+  const visibleLocations: MapLocation[] = [];
 
   return (
     <div className="min-h-screen bg-ink-900 relative overflow-hidden pt-16">
@@ -40,7 +37,13 @@ export function GuildLobby({ onNavigate }: GuildLobbyProps) {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="animate-fade-in-down">
               <div className="hud-label mb-1">GUILD HEADQUARTERS</div>
-              <h1 className="section-title text-3xl md:text-4xl">{guildSettings.name}</h1>
+              <h1 className="section-title text-3xl md:text-4xl" aria-label={guildSettings.name}>
+                {Array.from(guildSettings.name).map((character, index) => (
+                  <span key={`${character}-${index}`} className="inline-block animate-letter-reveal" style={{ animationDelay: `${index * 45}ms` }}>
+                    {character === ' ' ? '\u00a0' : character}
+                  </span>
+                ))}
+              </h1>
             </div>
             <div className="flex items-center gap-3 glass-panel px-4 py-2 clip-tactical animate-fade-in-down">
               <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse" />

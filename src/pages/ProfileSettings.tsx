@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { EMPTY_MEMBER_STATS, ROLE_LABELS, ROLE_COLORS, type DiscordPresence, type MemberStats } from '@/types';
+import { EMPTY_MEMBER_STATS, ROLE_LABELS, ROLE_COLORS, type DiscordPresence } from '@/types';
 import { GridBackground, ParticleField, Vignette } from '@/components/effects/VisualEffects';
 import { User, Award, Shield, Edit2, Save, X, Bell, Lock, Globe, ExternalLink, KeyRound, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -9,12 +9,67 @@ export function ProfilePage() {
   const discordBio = member?.discordBio || '';
   const discordStatus = member?.discordStatus || '';
   const rankScore = member ? rankingScores.filter((score) => score.memberId === member.id).reduce((total, score) => total + score.points, 0) : 0;
-  const [editing, setEditing] = useState(false);
-  const [bio, setBio] = useState(member?.bio || '');
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    bio: member?.bio || '',
+    freeFireName: member?.freeFireName || '',
+    preferredRegion: member?.preferredRegion || '',
+    preferredPlaystyle: member?.preferredPlaystyle || '',
+    profileVisibility: member?.profileVisibility || 'public',
+  });
   const [freeFireUid, setFreeFireUid] = useState(member?.freeFireUid || member?.application?.gameId || '');
   const [uidEditing, setUidEditing] = useState(false);
 
+  useEffect(() => {
+    setProfileForm({
+      bio: member?.bio || '',
+      freeFireName: member?.freeFireName || '',
+      preferredRegion: member?.preferredRegion || '',
+      preferredPlaystyle: member?.preferredPlaystyle || '',
+      profileVisibility: member?.profileVisibility || 'public',
+    });
+    setFreeFireUid(member?.freeFireUid || member?.application?.gameId || '');
+  }, [member]);
+
   if (!member) return null;
+
+  const submitProfileChanges = async () => {
+    const payload = {
+      bio: profileForm.bio.trim(),
+      freeFireName: profileForm.freeFireName.trim(),
+      preferredRegion: profileForm.preferredRegion.trim(),
+      preferredPlaystyle: profileForm.preferredPlaystyle.trim(),
+      profileVisibility: profileForm.profileVisibility,
+    };
+    if (payload.bio.length > 500) {
+      setProfileError('Bio must be 500 characters or fewer.');
+      return;
+    }
+    if (payload.freeFireName.length > 40) {
+      setProfileError('Free Fire name must be 40 characters or fewer.');
+      return;
+    }
+    if (payload.preferredRegion.length > 24) {
+      setProfileError('Preferred region must be 24 characters or fewer.');
+      return;
+    }
+    if (payload.preferredPlaystyle.length > 40) {
+      setProfileError('Preferred playstyle must be 40 characters or fewer.');
+      return;
+    }
+    setProfileSaving(true);
+    setProfileError('');
+    try {
+      updateMemberProfile(payload);
+      setEditingProfile(false);
+    } catch {
+      setProfileError('Profile could not be updated.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-ink-900 relative overflow-hidden pt-16">
@@ -85,16 +140,63 @@ export function ProfilePage() {
             </div>
           </div>
 
-          {/* Bio section */}
           <div className="glass-panel clip-tactical p-6 mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <User size={20} className="text-neon-400" />
-                <h3 className="font-heading font-bold text-white text-lg uppercase tracking-wider">Bio</h3>
+                <h3 className="font-heading font-bold text-white text-lg uppercase tracking-wider">Profile Details</h3>
               </div>
-              <Lock size={16} className="text-gray-600" aria-label="Read-only bio" />
+              {!editingProfile ? (
+                <button onClick={() => setEditingProfile(true)} className="btn-outline px-3 py-2 text-xs">Edit Profile</button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => { setEditingProfile(false); setProfileError(''); setProfileForm({ bio: member.bio || '', freeFireName: member.freeFireName || '', preferredRegion: member.preferredRegion || '', preferredPlaystyle: member.preferredPlaystyle || '', profileVisibility: member.profileVisibility || 'public' }); }} className="p-2 text-gray-500 hover:text-alert-400" aria-label="Cancel profile editing"><X size={18} /></button>
+                  <button onClick={() => void submitProfileChanges()} disabled={profileSaving} className="p-2 text-gray-500 hover:text-success-400 disabled:opacity-50" aria-label="Save profile changes"><Save size={18} /></button>
+                </div>
+              )}
             </div>
-            <p className="text-gray-400 font-heading text-base leading-relaxed">{member.bio || 'No website bio set.'}</p>
+            {editingProfile ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-gray-500 mb-2 block">Bio</label>
+                  <textarea value={profileForm.bio} maxLength={500} onChange={(event) => setProfileForm((current) => ({ ...current, bio: event.target.value }))} rows={4} className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical resize-none" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-gray-500 mb-2 block">Free Fire Name</label>
+                    <input value={profileForm.freeFireName} maxLength={40} onChange={(event) => setProfileForm((current) => ({ ...current, freeFireName: event.target.value }))} className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
+                  </div>
+                  <div>
+                    <label className="font-mono text-[10px] uppercase tracking-widest text-gray-500 mb-2 block">Preferred Region</label>
+                    <input value={profileForm.preferredRegion} maxLength={24} onChange={(event) => setProfileForm((current) => ({ ...current, preferredRegion: event.target.value }))} className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
+                  </div>
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-gray-500 mb-2 block">Preferred Playstyle</label>
+                  <input value={profileForm.preferredPlaystyle} maxLength={40} onChange={(event) => setProfileForm((current) => ({ ...current, preferredPlaystyle: event.target.value }))} className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical" />
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-gray-500 mb-2 block">Profile Visibility</label>
+                  <select value={profileForm.profileVisibility} onChange={(event) => setProfileForm((current) => ({ ...current, profileVisibility: event.target.value as 'public' | 'guild' | 'private' }))} className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical">
+                    <option value="public">Public</option>
+                    <option value="guild">Guild Members</option>
+                    <option value="private">Private</option>
+                  </select>
+                </div>
+                {profileError && <div className="font-mono text-xs text-alert-400">{profileError}</div>}
+                {profileSaving && <div className="font-mono text-xs text-success-400">Saving profile...</div>}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-gray-400 font-heading text-base leading-relaxed">{member.bio || 'No website bio set.'}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm font-heading text-tactical-200">
+                  <div><span className="font-mono text-[10px] uppercase tracking-widest text-gray-500 block">Free Fire Name</span>{member.freeFireName || 'Not set'}</div>
+                  <div><span className="font-mono text-[10px] uppercase tracking-widest text-gray-500 block">Preferred Region</span>{member.preferredRegion || 'Not set'}</div>
+                  <div><span className="font-mono text-[10px] uppercase tracking-widest text-gray-500 block">Playstyle</span>{member.preferredPlaystyle || 'Not set'}</div>
+                  <div><span className="font-mono text-[10px] uppercase tracking-widest text-gray-500 block">Visibility</span>{member.profileVisibility || 'public'}</div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="glass-panel clip-tactical p-6 mb-6 animate-fade-in-up" style={{ animationDelay: '125ms' }}>

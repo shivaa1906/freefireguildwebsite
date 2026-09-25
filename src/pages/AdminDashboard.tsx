@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import type { GuildMember, UserRole } from '@/types';
+import type { GuildMember, RankChannelConfig, UserRole } from '@/types';
 import { guildApi } from '@/lib/api';
 import { ROLE_LABELS, ROLE_COLORS } from '@/types';
 import { GridBackground, ParticleField, ScanLines, Vignette, AnimatedNumber } from '@/components/effects/VisualEffects';
 import { ForbiddenPage } from '@/pages/ErrorPages';
-import { Shield, Users, Clock, Ban, UserPlus, Search, Check, X, AlertTriangle, Settings, ChevronLeft, ChevronRight, MessageCircle, Trash2, Save, RotateCcw, KeyRound, RefreshCw, Bell } from 'lucide-react';
+import { Shield, Users, Clock, Ban, UserPlus, Search, Check, X, AlertTriangle, Settings, ChevronLeft, ChevronRight, MessageCircle, Trash2, Save, RotateCcw, KeyRound, RefreshCw, Bell, Activity } from 'lucide-react';
 
-type AdminTab = 'overview' | 'pending' | 'suspended' | 'members' | 'chat' | 'apiKeys' | 'settings';
+type AdminTab = 'overview' | 'pending' | 'suspended' | 'members' | 'chat' | 'apiKeys' | 'health' | 'audit' | 'settings';
 type MonitoredKey = { memberId: string; memberName: string; role: string; uid: string; createdAt: string; lastValidatedAt?: string; lastUsedAt?: string; keyStatus: string };
+type AuditEvent = { id: string; timestamp: string; eventType: string; action: string; source: string; success: boolean; actorId?: string; actorDiscordId?: string; actorName?: string; actorRole?: string; targetId?: string; targetDiscordId?: string; targetName?: string; previousValue?: unknown; newValue?: unknown; reason?: string; ipAddress?: string; correlationId?: string; metadata?: unknown };
+type HealthSnapshot = { status: 'HEALTHY' | 'DEGRADED' | 'CRITICAL'; checkedAt: string; discord: { state: string; ready: boolean; guildAvailable: boolean; latencyMs: number | null; guildId: string | null; unavailableSince: string | null; memberCount: number | null }; database: { configured: boolean; available: boolean; fallbackActive: boolean; fallbackWarning: string | null; auditStorageAvailable: boolean; lastSuccessAt: string | null; unavailableSince: string | null }; synchronization: { pendingSync: number; oldestPendingSyncAt: string | null; recentFailures: number; lastAttemptAt: string | null; lastSuccessAt: string | null; lastFailureAt: string | null; recentFailureEvents: AuditEvent[] }; lifecycle: { graceMembers: number; oldestDepartureAt: string | null; suspended: number; suspendedInDiscord: number; suspendedOutsideDiscord: number; approvedOutsideDiscord: number; approvedInDiscord: number }; capacity: Record<string, { count: number; limit: number }>; websocket: { authenticatedClients: number } };
+type SyncHealthResponse = { items: GuildMember[]; total: number; pages: number; page: number; limit: number; filter: string };
 type RoleKey = 'guildLeader' | 'coadmin' | 'moderator' | 'member' | 'members';
 type RoleKeySettings = { refreshEveryDays: number; refreshDay: string; refreshTime: string; shareMemberCount: number };
 type AutomationChannel = 'auto' | 'discord' | 'website';
@@ -45,8 +48,25 @@ export function AdminDashboard() {
   const [verificationSaving, setVerificationSaving] = useState(false);
   const [verificationError, setVerificationError] = useState('');
   const [chatRefreshing, setChatRefreshing] = useState(false);
+  const [rankChannelConfig, setRankChannelConfig] = useState<RankChannelConfig>({ id: 'settings', includeAllChannels: true, includedChannelIds: [], excludedChannelIds: [] });
+  const [rankChannelDraft, setRankChannelDraft] = useState('');
+  const [rankChannelSaving, setRankChannelSaving] = useState(false);
+  const [rankChannelError, setRankChannelError] = useState('');
   const [keyMonitor, setKeyMonitor] = useState<HlGamingKeyMonitor | null>(null);
   const [keyMonitorError, setKeyMonitorError] = useState('');
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditCategory, setAuditCategory] = useState('');
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditPages, setAuditPages] = useState(1);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState('');
+  const [selectedAuditEvent, setSelectedAuditEvent] = useState<AuditEvent | null>(null);
+  const [health, setHealth] = useState<HealthSnapshot | null>(null);
+  const [syncHealth, setSyncHealth] = useState<SyncHealthResponse | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState('');
+  const [healthRefreshKey, setHealthRefreshKey] = useState(0);
   const [selectedRole, setSelectedRole] = useState<RoleKey | null>(null);
   const [automationDraft, setAutomationDraft] = useState<{ channel: AutomationChannel; role: RoleKey } | null>(null);
   const [automationSettings, setAutomationSettings] = useState<Record<string, AutomationSettings>>(() => {
@@ -68,6 +88,30 @@ export function AdminDashboard() {
     setChatRefreshing(true);
     refreshChatMessages();
   };
+
+  const saveRankChannelSettings = async () => {
+    const normalized = rankChannelDraft
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .filter((entry) => /^\d{10,20}$/.test(entry));
+    setRankChannelSaving(true);
+    setRankChannelError('');
+    try {
+      const nextConfig = await guildApi.updateRankChannelConfig<RankChannelConfig>({
+        includeAllChannels: rankChannelConfig.includeAllChannels,
+        includedChannelIds: normalized,
+        excludedChannelIds: rankChannelConfig.excludedChannelIds || [],
+      });
+      setRankChannelConfig(nextConfig);
+      setRankChannelDraft((nextConfig.includedChannelIds || []).join(', '));
+    } catch (error) {
+      setRankChannelError(error instanceof Error ? error.message : 'Rank channel settings could not be saved.');
+    } finally {
+      setRankChannelSaving(false);
+    }
+  };
+
   const [automationSaveState, setAutomationSaveState] = useState<'idle' | 'success' | 'failed'>('idle');
   const [reminderMemberId, setReminderMemberId] = useState<string | null>(null);
   const [reminderStatus, setReminderStatus] = useState<Record<string, 'success' | 'failed'>>({});
@@ -113,6 +157,14 @@ export function AdminDashboard() {
   }, [automationSettings]);
 
   useEffect(() => {
+    if (tab !== 'chat') return;
+    void guildApi.rankChannelConfig<RankChannelConfig>().then((config) => {
+      setRankChannelConfig(config);
+      setRankChannelDraft((config.includedChannelIds || []).join(', '));
+    }).catch((error: Error) => setRankChannelError(error.message));
+  }, [tab]);
+
+  useEffect(() => {
     if (tab !== 'apiKeys') return;
     void guildApi.adminHlGamingKeys<HlGamingKeyMonitor>().then((data) => {
       if (!data) return;
@@ -120,6 +172,44 @@ export function AdminDashboard() {
       setAutomationSettings((current) => ({ ...current, ...Object.fromEntries(Object.entries(data.config.automationSettings || {}).map(([role, settings]) => [`auto:${role}`, settings])) }));
     }).catch((error: Error) => setKeyMonitorError(error.message));
   }, [tab]);
+
+  useEffect(() => {
+    if (tab !== 'audit') return;
+    setAuditLoading(true);
+    setAuditError('');
+    const query = new URLSearchParams({ page: String(auditPage), limit: '30' });
+    if (auditCategory) query.set('category', auditCategory);
+    void guildApi.auditLog<{ items: AuditEvent[]; pages: number; total: number }>(query.toString()).then((result) => {
+      setAuditEvents(result.items);
+      setAuditPages(result.pages || 1);
+      setAuditTotal(result.total || 0);
+    }).catch((error: Error) => setAuditError(error.message)).finally(() => setAuditLoading(false));
+  }, [tab, auditCategory, auditPage]);
+
+  useEffect(() => {
+    if (tab !== 'health') return;
+    let active = true;
+    const loadHealth = async () => {
+      setHealthLoading(true);
+      setHealthError('');
+      try {
+        const [snapshot, backlog] = await Promise.all([
+          guildApi.systemHealth<HealthSnapshot>(),
+          guildApi.syncHealth<SyncHealthResponse>(),
+        ]);
+        if (!active) return;
+        setHealth(snapshot);
+        setSyncHealth(backlog);
+      } catch (error) {
+        if (active) setHealthError(error instanceof Error ? error.message : 'System health could not be loaded.');
+      } finally {
+        if (active) setHealthLoading(false);
+      }
+    };
+    void loadHealth();
+    const timer = window.setInterval(() => void loadHealth(), 30000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [tab, healthRefreshKey]);
 
   const updateTabScrollState = () => {
     const tabsElement = tabsRef.current;
@@ -259,6 +349,29 @@ export function AdminDashboard() {
     }
   };
 
+  const handleReconcileMember = async (id: string) => {
+    setRoleUpdateError('');
+    try {
+      await guildApi.reconcileMember(id);
+      if (tab === 'health') setHealthRefreshKey((value) => value + 1);
+    } catch (error) {
+      setRoleUpdateError(error instanceof Error ? error.message : 'Member reconciliation failed.');
+    }
+  };
+
+  const handleReconcileAll = async () => {
+    setHealthError('');
+    setHealthLoading(true);
+    try {
+      await guildApi.reconcileAll();
+      setHealthRefreshKey((value) => value + 1);
+    } catch (error) {
+      setHealthError(error instanceof Error ? error.message : 'System-wide reconciliation failed.');
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   const tabs: { id: AdminTab; label: string; icon: typeof Shield; badge?: number }[] = [
     { id: 'overview', label: 'Overview', icon: Shield },
     { id: 'pending', label: 'Pending', icon: Clock, badge: pendingMembers.length },
@@ -266,6 +379,8 @@ export function AdminDashboard() {
     { id: 'members', label: 'Members', icon: Users },
     ...(canMonitorChat ? [{ id: 'chat' as AdminTab, label: 'Chat Monitor', icon: MessageCircle }] : []),
     { id: 'apiKeys', label: 'API Key Monitor', icon: KeyRound },
+    { id: 'health', label: 'System Health', icon: Activity },
+    { id: 'audit', label: 'Audit Log', icon: Shield },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -403,7 +518,7 @@ export function AdminDashboard() {
               {suspendedMembers.map((m) => (
                 <div key={m.id} className="tactical-card p-4 flex items-center gap-4 flex-wrap">
                   <img src={m.avatar} alt={m.displayName} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.displayName)}&background=f5a623&color=111827&size=200`; }} className="w-10 h-10 rounded-full object-cover border border-alert-500/40" />
-                  <div className="flex-1 min-w-0"><div className="font-heading font-semibold text-white">{m.displayName}</div><div className="font-mono text-xs text-gray-500">{m.discordName}</div></div>
+                  <div className="flex-1 min-w-0"><div className="font-heading font-semibold text-white">{m.displayName}</div><div className="font-mono text-xs text-gray-500">{m.discordName}</div><div className="mt-1 font-mono text-[10px] uppercase text-tactical-300">Previous role: {m.suspendedFromRole || 'Unknown'} · Discord: {m.isInDiscordGuild ? 'In guild' : 'Outside guild'}</div><div className="font-mono text-[10px] uppercase text-gray-500">Status: {m.status} · Suspended: {m.suspendedAt || 'Not recorded'} · Left: {m.discordLeftAt || 'Not recorded'}</div></div>
                   <span className="border-2 border-alert-500 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-alert-400 rotate-[-4deg]">Suspended</span>
                   <button onClick={() => void unsuspendMember(m.id)} className="px-3 py-2 bg-success-500/10 border border-success-500/30 text-success-400 font-heading font-semibold text-xs uppercase hover:bg-success-500/20 transition-all clip-tactical">Unsuspend</button>
                 </div>
@@ -462,6 +577,14 @@ export function AdminDashboard() {
                     {!isOwner && <span className="font-mono text-[10px] text-gray-600 uppercase">Owner manages roles</span>}
                     <div className={`font-mono text-xs uppercase ${ROLE_COLORS[m.role]}`}>{ROLE_LABELS[m.role]}</div>
                     <button
+                      onClick={() => void handleReconcileMember(m.id)}
+                      className="p-2 text-tactical-300 hover:text-neon-400 border border-tactical-700/30 hover:border-neon-500/40 transition-all"
+                      title="Reconcile Discord and website state"
+                      aria-label={`Reconcile ${m.displayName}`}
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                    <button
                       onClick={() => setConfirmAction({ type: 'suspend', member: m })}
                       className="px-3 py-2 bg-alert-500/10 border border-alert-500/30 text-alert-400 font-heading font-semibold text-xs uppercase hover:bg-alert-500/20 transition-all clip-tactical"
                     >
@@ -483,6 +606,31 @@ export function AdminDashboard() {
                 </div>
                 <p className="font-mono text-xs text-tactical-300 uppercase">Guild Leader and Acting Leader oversight · {privateConversations.length} conversations · {privateMessages.length} messages</p>
               </div>
+
+              <div className="glass-panel clip-tactical p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div>
+                    <div className="hud-label mb-1">CHAT RANK CHANNELS</div>
+                    <div className="font-heading text-white uppercase tracking-wider">Server-authoritative channel rules</div>
+                  </div>
+                  <button onClick={() => void saveRankChannelSettings()} disabled={rankChannelSaving} className="btn-neon inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"><Save size={15} /> {rankChannelSaving ? 'Saving...' : 'Save'}</button>
+                </div>
+                <label className="flex items-center justify-between gap-3 p-3 border border-ink-600 bg-ink-800/30">
+                  <span className="font-mono text-[10px] uppercase text-gray-300">Include all channels</span>
+                  <input type="checkbox" checked={rankChannelConfig.includeAllChannels} onChange={(event) => setRankChannelConfig((current) => ({ ...current, includeAllChannels: event.target.checked }))} className="h-4 w-4 accent-neon-500" />
+                </label>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="font-mono text-[10px] uppercase tracking-wider text-gray-500 mb-1 block">Included channel IDs</label>
+                    <textarea value={rankChannelDraft} onChange={(event) => setRankChannelDraft(event.target.value)} rows={4} placeholder="Comma-separated Discord channel IDs" className="w-full px-4 py-3 bg-ink-800/50 border border-neon-500/40 text-white font-heading focus:border-neon-500/50 focus:outline-none clip-tactical resize-none" />
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-gray-500 mb-1 block">Excluded channel IDs</div>
+                    <div className="font-mono text-xs text-gray-400">{(rankChannelConfig.excludedChannelIds || []).length > 0 ? (rankChannelConfig.excludedChannelIds || []).join(', ') : 'None excluded'}</div>
+                  </div>
+                  {rankChannelError && <div className="font-mono text-xs text-alert-400">{rankChannelError}</div>}
+                </div>
+              </div>
               {privateConversations.length === 0 && (
                 <div className="text-center py-20 font-mono text-sm text-gray-500 uppercase">No private messages yet</div>
               )}
@@ -499,6 +647,173 @@ export function AdminDashboard() {
                 const latestMessage = conversation[conversation.length - 1];
                 return <button key={conversationKey} onClick={() => setSelectedConversationKey(conversationKey)} className="tactical-card w-full p-4 flex items-start gap-4 text-left hover:border-neon-500/50"><div className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-neon-500/15 border border-neon-500/30 font-heading font-bold text-neon-300">{firstName.slice(0, 2).toUpperCase()}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap font-heading font-bold text-white"><span>{firstName}</span><span className="text-gray-600">↔</span><span>{secondName}</span><span className="font-mono text-[10px] text-gray-500">{conversation.length} messages · {new Date(latestMessage.createdAt).toLocaleString()}</span></div><p className="mt-2 text-gray-300 font-heading text-sm truncate">{latestMessage.content}</p></div><ChevronRight size={18} className="text-neon-400 mt-2" /></button>;
               })}
+            </div>
+          )}
+
+          {tab === 'health' && (
+            <div className="space-y-4 animate-fade-in-up">
+              <div className="glass-panel clip-tactical p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="hud-label mb-1">SYSTEM STATUS</div>
+                    <div className="font-display text-2xl uppercase tracking-wider text-white">{health?.status || 'LOADING...'}</div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button onClick={() => setHealthRefreshKey((value) => value + 1)} disabled={healthLoading} className="btn-outline inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={15} className={healthLoading ? 'animate-spin' : ''} /> Refresh</button>
+                    <button onClick={() => void handleReconcileAll()} disabled={healthLoading} className="btn-neon inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={15} /> Reconcile All</button>
+                  </div>
+                </div>
+                {healthError && <div className="mt-4 border border-alert-500/40 bg-alert-500/10 px-4 py-3 font-mono text-xs uppercase text-alert-400">{healthError}</div>}
+                {!health && !healthError && <div className="mt-4 font-mono text-xs uppercase text-gray-500">Loading system health...</div>}
+              </div>
+
+              {health && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {[
+                      { label: 'Discord', value: health.discord.ready ? 'Ready' : 'Unavailable', tone: health.discord.ready ? 'text-success-400' : 'text-alert-400' },
+                      { label: 'Database', value: health.database.available ? 'Connected' : health.database.fallbackActive ? 'Fallback' : 'Offline', tone: health.database.available ? 'text-success-400' : health.database.fallbackActive ? 'text-warning-400' : 'text-alert-400' },
+                      { label: 'Pending Sync', value: String(health.synchronization.pendingSync), tone: health.synchronization.pendingSync > 0 ? 'text-warning-400' : 'text-success-400' },
+                      { label: 'Grace Period', value: String(health.lifecycle.graceMembers), tone: health.lifecycle.graceMembers > 0 ? 'text-warning-400' : 'text-success-400' },
+                    ].map((card) => (
+                      <div key={card.label} className="tactical-card p-4">
+                        <div className="font-mono text-[10px] uppercase text-gray-500">{card.label}</div>
+                        <div className={`mt-2 font-display text-2xl ${card.tone}`}>{card.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="tactical-card p-5">
+                      <div className="font-heading font-bold text-white uppercase tracking-wider text-lg mb-4">Discord</div>
+                      <div className="space-y-2 font-mono text-xs text-gray-300">
+                        <div>State: <span className="text-white">{health.discord.state}</span></div>
+                        <div>Guild available: <span className={health.discord.guildAvailable ? 'text-success-400' : 'text-alert-400'}>{health.discord.guildAvailable ? 'Yes' : 'No'}</span></div>
+                        <div>Ready: <span className={health.discord.ready ? 'text-success-400' : 'text-alert-400'}>{health.discord.ready ? 'Yes' : 'No'}</span></div>
+                        <div>Latency: <span className="text-white">{health.discord.latencyMs ?? 'n/a'} ms</span></div>
+                        <div>Guild ID: <span className="text-white">{health.discord.guildId || 'n/a'}</span></div>
+                        <div>Last success: <span className="text-white">{health.synchronization.lastSuccessAt ? new Date(health.synchronization.lastSuccessAt).toLocaleString() : 'n/a'}</span></div>
+                        <div>Last failure: <span className="text-white">{health.synchronization.lastFailureAt ? new Date(health.synchronization.lastFailureAt).toLocaleString() : 'n/a'}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="tactical-card p-5">
+                      <div className="font-heading font-bold text-white uppercase tracking-wider text-lg mb-4">Database</div>
+                      <div className="space-y-2 font-mono text-xs text-gray-300">
+                        <div>MongoDB: <span className={health.database.available ? 'text-success-400' : 'text-alert-400'}>{health.database.available ? 'Available' : 'Unavailable'}</span></div>
+                        <div>Fallback: <span className={health.database.fallbackActive ? 'text-warning-400' : 'text-success-400'}>{health.database.fallbackActive ? 'Active' : 'Inactive'}</span></div>
+                        <div>Audit storage: <span className={health.database.auditStorageAvailable ? 'text-success-400' : 'text-alert-400'}>{health.database.auditStorageAvailable ? 'Available' : 'Unavailable'}</span></div>
+                        <div>Last success: <span className="text-white">{health.database.lastSuccessAt ? new Date(health.database.lastSuccessAt).toLocaleString() : 'n/a'}</span></div>
+                        {health.database.fallbackWarning && <div className="text-warning-400">{health.database.fallbackWarning}</div>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="tactical-card p-5">
+                      <div className="font-heading font-bold text-white uppercase tracking-wider text-lg mb-4">Synchronization</div>
+                      <div className="space-y-2 font-mono text-xs text-gray-300">
+                        <div>Pending members: <span className="text-white">{health.synchronization.pendingSync}</span></div>
+                        <div>Oldest pending age: <span className="text-white">{health.synchronization.oldestPendingSyncAt ? new Date(health.synchronization.oldestPendingSyncAt).toLocaleString() : 'n/a'}</span></div>
+                        <div>Recent failures: <span className="text-white">{health.synchronization.recentFailures}</span></div>
+                        <div>Last sync attempt: <span className="text-white">{health.synchronization.lastAttemptAt ? new Date(health.synchronization.lastAttemptAt).toLocaleString() : 'n/a'}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="tactical-card p-5">
+                      <div className="font-heading font-bold text-white uppercase tracking-wider text-lg mb-4">Lifecycle & Capacity</div>
+                      <div className="space-y-2 font-mono text-xs text-gray-300">
+                        <div>Grace period members: <span className="text-white">{health.lifecycle.graceMembers}</span></div>
+                        <div>Suspended total: <span className="text-white">{health.lifecycle.suspended}</span></div>
+                        <div>Approved outside Discord: <span className="text-white">{health.lifecycle.approvedOutsideDiscord}</span></div>
+                        <div>Approved in Discord: <span className="text-white">{health.lifecycle.approvedInDiscord}</span></div>
+                        {Object.entries(health.capacity).map(([role, details]) => (
+                          <div key={role}>{role}: <span className="text-white">{details.count} / {details.limit}</span></div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="tactical-card p-5">
+                    <div className="font-heading font-bold text-white uppercase tracking-wider text-lg mb-4">Recent Errors</div>
+                    {health.synchronization.recentFailureEvents.length === 0 ? (
+                      <div className="font-mono text-xs text-gray-500 uppercase">No recent failures</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {health.synchronization.recentFailureEvents.slice(0, 6).map((event) => (
+                          <div key={event.id} className="border border-ink-600 bg-ink-800/30 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-heading font-semibold text-white uppercase">{event.action}</span>
+                              <span className="font-mono text-[10px] text-alert-400">{event.source}</span>
+                            </div>
+                            <div className="mt-2 font-mono text-[10px] text-gray-400">{event.reason || 'No reason recorded'} · {new Date(event.timestamp).toLocaleString()}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {syncHealth && (
+                    <div className="tactical-card p-5">
+                      <div className="font-heading font-bold text-white uppercase tracking-wider text-lg mb-4">Sync backlog</div>
+                      {syncHealth.items.length === 0 ? (
+                        <div className="font-mono text-xs text-gray-500 uppercase">No backlog items</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {syncHealth.items.slice(0, 8).map((member) => (
+                            <div key={member.id} className="flex items-center justify-between gap-3 border border-ink-600 bg-ink-800/30 p-3">
+                              <div>
+                                <div className="font-heading font-semibold text-white">{member.displayName}</div>
+                                <div className="font-mono text-[10px] text-gray-400">{member.status} · {member.role}</div>
+                              </div>
+                              <button onClick={() => void handleReconcileMember(member.id)} className="btn-outline inline-flex items-center gap-2">Reconcile</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'audit' && (
+            <div className="space-y-4 animate-fade-in-up">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="hud-label mb-1">SECURITY HISTORY</div>
+                  <div className="font-heading text-sm text-gray-400">{auditTotal} recorded events</div>
+                </div>
+                <select value={auditCategory} onChange={(event) => { setAuditCategory(event.target.value); setAuditPage(1); }} className="px-3 py-2 bg-ink-800/50 border border-tactical-700/40 text-tactical-200 font-heading text-xs uppercase tracking-wider focus:border-neon-500/50 focus:outline-none clip-tactical">
+                  <option value="">All events</option>
+                  <option value="member">Member</option>
+                  <option value="role">Role</option>
+                  <option value="suspension">Suspension</option>
+                  <option value="discord">Discord Sync</option>
+                  <option value="security">Security</option>
+                  <option value="authentication">Authentication</option>
+                </select>
+              </div>
+              {auditError && <div className="border border-alert-500/40 bg-alert-500/10 px-4 py-3 font-mono text-xs uppercase text-alert-400">{auditError}</div>}
+              {auditLoading && <div className="py-12 text-center font-mono text-xs uppercase text-gray-500">Loading audit history...</div>}
+              {!auditLoading && auditEvents.length === 0 && <div className="py-12 text-center font-mono text-xs uppercase text-gray-500">No audit events found</div>}
+              <div className="space-y-2">
+                {auditEvents.map((event) => (
+                  <button key={event.id} onClick={() => setSelectedAuditEvent(selectedAuditEvent?.id === event.id ? null : event)} className="tactical-card w-full p-4 text-left hover:border-neon-500/50">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className={`font-mono text-[10px] uppercase ${event.success ? 'text-success-400' : 'text-alert-400'}`}>{event.success ? 'Success' : 'Failed'}</span>
+                      <span className="font-heading font-semibold text-white uppercase">{event.action}</span>
+                      <span className="font-mono text-[10px] uppercase text-tactical-300">{event.source}</span>
+                      <span className="ml-auto font-mono text-[10px] text-gray-500">{new Date(event.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div className="mt-2 font-mono text-xs text-gray-400">Actor: {event.actorName || event.actorId || 'System'} · Target: {event.targetName || event.targetId || event.targetDiscordId || 'Unknown'}</div>
+                    {event.reason && <div className="mt-1 truncate font-mono text-[10px] text-gray-500">{event.reason}</div>}
+                    {selectedAuditEvent?.id === event.id && <div className="mt-4 grid gap-3 border-t border-ink-600 pt-3 md:grid-cols-2"><div className="font-mono text-[10px] text-gray-400"><div>EVENT ID: {event.id}</div><div>TYPE: {event.eventType}</div><div>ACTOR: {event.actorName || event.actorId || 'System'}{event.actorDiscordId ? ` · ${event.actorDiscordId}` : ''}</div><div>TARGET: {event.targetName || event.targetId || 'Unknown'}{event.targetDiscordId ? ` · ${event.targetDiscordId}` : ''}</div><div>REQUEST: {event.correlationId || 'Not available'}</div></div><div className="font-mono text-[10px] text-gray-400"><div>PREVIOUS: {JSON.stringify(event.previousValue ?? null)}</div><div>NEW: {JSON.stringify(event.newValue ?? null)}</div><div>CONTEXT: {JSON.stringify(event.metadata ?? null)}</div></div></div>}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between border-t border-ink-600 pt-4"><button disabled={auditPage <= 1} onClick={() => setAuditPage((page) => Math.max(1, page - 1))} className="btn-outline disabled:cursor-not-allowed disabled:opacity-40">Previous</button><span className="font-mono text-xs text-gray-500">PAGE {auditPage} / {auditPages}</span><button disabled={auditPage >= auditPages} onClick={() => setAuditPage((page) => Math.min(auditPages, page + 1))} className="btn-outline disabled:cursor-not-allowed disabled:opacity-40">Next</button></div>
             </div>
           )}
 

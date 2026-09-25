@@ -1,4 +1,4 @@
-import type { GuildMember, GuildEvent, Announcement, MapLocation, CustomizationItem } from '@/types';
+import type { GuildMember, Announcement, MapLocation, CustomizationItem } from '@/types';
 
 const AVATARS = [
   'https://images.pexels.com/photos/33086703/pexels-photo-33086703.jpeg?auto=compress&cs=tinysrgb&w=200&h=200&fit=crop',
@@ -141,63 +141,7 @@ export const mockMembers: GuildMember[] = [
   },
 ];
 
-export const mockEvents: GuildEvent[] = [
-  {
-    id: 'e1',
-    name: 'Weekend Booyah Bash',
-    type: 'custom-match',
-    date: '2024-09-14',
-    time: '20:00',
-    description: 'Squad vs Squad custom lobby. Best of 5 matches. Bring your A-game.',
-    participantLimit: 12,
-    participants: ['u1', 'u2', 'u3', 'u4'],
-    status: 'upcoming',
-  },
-  {
-    id: 'e2',
-    name: 'Guild Tournament Finals',
-    type: 'tournament',
-    date: '2024-09-20',
-    time: '18:00',
-    description: 'Internal guild tournament. Single elimination bracket. Winner gets exclusive skin.',
-    participantLimit: 16,
-    participants: ['u1', 'u2', 'u3', 'u4', 'u5', 'u6'],
-    status: 'upcoming',
-  },
-  {
-    id: 'e3',
-    name: 'Daily Practice Session',
-    type: 'practice',
-    date: '2024-09-07',
-    time: '19:00',
-    description: 'Warm-up and strategy discussion. Required for all new recruits.',
-    participantLimit: 8,
-    participants: ['u5', 'u6'],
-    status: 'live',
-  },
-  {
-    id: 'e4',
-    name: 'Scrim vs Rival Guild',
-    type: 'scrim',
-    date: '2024-09-10',
-    time: '21:00',
-    description: 'Practice match against Shadow Squad. Coordinate on Discord.',
-    participantLimit: 4,
-    participants: ['u1', 'u2', 'u3'],
-    status: 'completed',
-  },
-];
-
 export const mockAnnouncements: Announcement[] = [
-  {
-    id: 'a1',
-    title: 'Guild Tournament Announcement',
-    content: 'Our first internal tournament begins September 20th. Sign up in the Events section. The winner will receive an exclusive in-guild badge and customization items. All members are encouraged to participate, regardless of rank.',
-    author: 'GhostReaper',
-    date: '2024-09-05',
-    featured: true,
-    category: 'event',
-  },
   {
     id: 'a2',
     title: 'New Recruitment Drive',

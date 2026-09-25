@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { RankingTask } from '@/types';
+import { guildApi } from '@/lib/api';
 import { GridBackground, ParticleField, ScanLines, Vignette } from '@/components/effects/VisualEffects';
 import { Check, Medal, Plus, Trash2, Trophy } from 'lucide-react';
+
+type LeaderboardEntry = {
+  memberId: string;
+  displayName: string;
+  discordName: string;
+  avatar: string;
+  points: number;
+  rankTitle: string;
+  position: number;
+};
 
 export function RankingPage() {
   const { member, members, rankingTasks, rankingScores, rankingError, createRankingTask, updateRankingTask, deleteRankingTask, awardRankingScore } = useAuth();
@@ -10,11 +21,47 @@ export function RankingPage() {
   const [awardDraft, setAwardDraft] = useState({ taskId: '', memberId: '', points: 0 });
   const [awardMemberSearch, setAwardMemberSearch] = useState('');
   const [awardMemberFocused, setAwardMemberFocused] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const canManage = member?.role === 'admin' || member?.role === 'coadmin';
   const canUseRankings = member?.role === 'admin' || member?.role === 'coadmin' || member?.role === 'moderator' || member?.role === 'member';
-  const ranking = members
-    .map((item) => ({ member: item, points: rankingScores.filter((score) => score.memberId === item.id).reduce((total, score) => total + score.points, 0) }))
-    .sort((a, b) => b.points - a.points || a.member.displayName.localeCompare(b.member.displayName));
+
+  useEffect(() => {
+    void guildApi.rankingLeaderboard<{ entries?: LeaderboardEntry[] }>().then((result) => {
+      setLeaderboard(result.entries || []);
+    }).catch(() => {
+      setLeaderboard([]);
+    });
+  }, []);
+
+  type RankingRow = {
+    member: (typeof members)[number];
+    points: number;
+    position: number;
+    rankTitle: string;
+  };
+
+  const ranking: RankingRow[] = leaderboard.length > 0
+    ? leaderboard
+      .map((entry) => {
+        const member = members.find((item) => item.id === entry.memberId);
+        if (!member) return null;
+        return {
+          member,
+          points: entry.points,
+          position: entry.position,
+          rankTitle: entry.rankTitle,
+        } satisfies RankingRow;
+      })
+      .filter((entry): entry is RankingRow => entry !== null)
+    : members
+      .map((item) => ({
+        member: item,
+        points: rankingScores.filter((score) => score.memberId === item.id).reduce((total, score) => total + score.points, 0),
+        position: 0,
+        rankTitle: item.rank || 'Rookie',
+      }))
+      .sort((a, b) => b.points - a.points || a.member.displayName.localeCompare(b.member.displayName))
+      .map((entry, index) => ({ ...entry, position: index + 1 }));
   const approvedMembers = members.filter((item) => item.status === 'approved');
   const filteredAwardMembers = approvedMembers.filter((item) => item.displayName.toLowerCase().includes(awardMemberSearch.toLowerCase()));
   const completedTasks = rankingTasks.filter((task) => task.status === 'completed');
@@ -51,10 +98,10 @@ export function RankingPage() {
               <div className="space-y-2">
                 {ranking.map(({ member: rankedMember, points }, index) => (
                   <div key={rankedMember.id} className="tactical-card p-4 flex items-center gap-3">
-                    <div className="w-8 font-display font-bold text-neon-400">#{index + 1}</div>
+                    <div className="w-8 font-display font-bold text-neon-400">#{leaderboard.length > 0 ? (leaderboard.find((entry) => entry.memberId === rankedMember.id)?.position || index + 1) : index + 1}</div>
                     <img src={rankedMember.avatar} alt={rankedMember.displayName} className="w-9 h-9 rounded-full object-cover border border-neon-500/30" />
                     <div className="flex-1 min-w-0"><div className="font-heading font-bold text-white truncate">{rankedMember.displayName}</div><div className="font-mono text-xs text-gray-500">{rankedMember.discordName}</div></div>
-                    <div className="font-display font-bold text-lg text-neon-300">{points} <span className="font-mono text-[10px] text-gray-500">PTS</span></div>
+                    <div className="text-right"><div className="font-display font-bold text-lg text-neon-300">{points} <span className="font-mono text-[10px] text-gray-500">PTS</span></div><div className="font-mono text-[10px] text-gray-500 uppercase">{leaderboard.find((entry) => entry.memberId === rankedMember.id)?.rankTitle || rankedMember.rank || 'Rookie'}</div></div>
                   </div>
                 ))}
               </div>

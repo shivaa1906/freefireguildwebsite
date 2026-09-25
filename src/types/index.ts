@@ -62,6 +62,8 @@ export const EMPTY_MEMBER_STATS: MemberStats = {
   headshotRate: 0,
 };
 
+export type ProfileVisibility = 'public' | 'guild' | 'private';
+
 export interface GuildMember {
   id: string;
   discordId: string;
@@ -72,12 +74,19 @@ export interface GuildMember {
   discordAvatar?: string;
   discordBio?: string;
   discordStatus?: string;
+  freeFireName?: string;
   freeFireUid?: string;
+  preferredRegion?: string;
+  preferredPlaystyle?: string;
+  profileVisibility?: ProfileVisibility;
   hasHlGamingApiKey?: boolean;
   role: UserRole;
   status: ApprovalStatus;
   joinDate: string;
   rank: string;
+  rankingPoints?: number;
+  rankingPosition?: number | null;
+  rankingTitle?: string;
   bio: string;
   achievements: string[];
   stats?: MemberStats;
@@ -87,7 +96,10 @@ export interface GuildMember {
   isOwner?: boolean;
   isInDiscordGuild?: boolean;
   suspendedFromRole?: UserRole;
+  suspendedAt?: string;
   discordLeftAt?: string;
+  discordSyncPending?: boolean;
+  discordSyncPendingAt?: string;
   application?: JoinApplication;
 }
 
@@ -148,6 +160,136 @@ export interface GuildEvent {
   participantLimit: number;
   participants: string[];
   status: 'upcoming' | 'live' | 'completed' | 'cancelled';
+  organizerId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  registrationOpen?: boolean;
+  tournament?: {
+    format?: 'single_elimination';
+    championId?: string;
+    winnerId?: string;
+    verified?: boolean;
+    standings?: Array<{ memberId: string; wins: number; losses: number; placement: number }>;
+  };
+  result?: {
+    winnerId?: string;
+    summary?: string;
+    verifiedBy?: string;
+    verifiedAt?: string;
+  };
+}
+
+export type TournamentFormat = 'single_elimination';
+export type TournamentStatus = 'draft' | 'registration_open' | 'registration_closed' | 'active' | 'completed' | 'cancelled';
+
+export interface Tournament {
+  id: string;
+  eventId: string;
+  name: string;
+  description: string;
+  format: TournamentFormat;
+  gameMode: string;
+  teamSize: number;
+  maxTeams: number;
+  registrationOpenAt: string;
+  registrationCloseAt: string;
+  startAt: string;
+  endAt: string;
+  status: TournamentStatus;
+  scoringRules: {
+    placementPoints?: Record<string, number>;
+    killPoints?: number;
+  };
+  rankingIntegration: {
+    enabled?: boolean;
+    verifiedOnly?: boolean;
+    taskId?: string;
+  };
+  createdBy: string;
+  updatedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TournamentParticipantStatus = 'registered' | 'withdrawn' | 'disqualified';
+
+export interface TournamentParticipant {
+  id: string;
+  tournamentId: string;
+  memberId: string;
+  status: TournamentParticipantStatus;
+  registeredAt: string;
+  updatedAt: string;
+}
+
+export type TournamentTeamStatus = 'active' | 'disbanded' | 'cancelled';
+
+export interface TournamentTeam {
+  id: string;
+  tournamentId: string;
+  name: string;
+  captainMemberId: string;
+  memberIds: string[];
+  status: TournamentTeamStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TournamentMatchStatus = 'pending' | 'scheduled' | 'live' | 'completed' | 'cancelled' | 'disputed';
+
+export interface TournamentMatch {
+  id: string;
+  tournamentId: string;
+  round: number;
+  matchNumber: number;
+  participantA: string | null;
+  participantB: string | null;
+  scheduledAt: string | null;
+  status: TournamentMatchStatus;
+  resultId: string | null;
+  winnerId: string | null;
+  nextMatchId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TournamentBracket {
+  tournamentId: string;
+  format: 'single_elimination';
+  bracketSize: number;
+  rounds: number;
+  matches: TournamentMatch[];
+}
+
+export type TournamentResultStatus = 'pending' | 'verified';
+
+export interface TournamentResult {
+  id: string;
+  matchId: string;
+  scoreA: number;
+  scoreB: number;
+  winnerId: string;
+  submittedBy: string;
+  status: TournamentResultStatus;
+  submittedAt: string;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  correctionVersion: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TournamentStanding {
+  id: string;
+  tournamentId: string;
+  teamId: string;
+  wins: number;
+  losses: number;
+  matchesPlayed: number;
+  placement: number | null;
+  status: 'active' | 'eliminated' | 'withdrawn' | 'disqualified';
+  lastResultId?: string | null;
+  updatedAt: string;
 }
 
 export interface Announcement {
@@ -199,11 +341,33 @@ export interface RankingScore {
   points: number;
   awardedBy: string;
   awardedAt: string;
+  source?: 'tournament';
+  sourceResultId?: string;
 }
 
 export interface RankingEntry {
   memberId: string;
   points: number;
+}
+
+export interface RankChannelConfig {
+  id: 'settings';
+  includeAllChannels: boolean;
+  includedChannelIds: string[];
+  excludedChannelIds: string[];
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface ChatRankSummary {
+  memberId: string;
+  totalPoints: number;
+  totalMessages: number;
+  totalWords: number;
+  lastMessageAt?: string;
+  rankTitle: string;
+  position?: number | null;
+  channels?: string[];
 }
 
 export interface MapLocation {

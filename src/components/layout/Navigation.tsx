@@ -9,6 +9,7 @@ const NAV_ITEMS: { view: AppView; label: string; icon: typeof Home; adminOnly?: 
   { view: 'lobby', label: 'Home', icon: Home },
   { view: 'members', label: 'Guild Members', icon: Users },
   { view: 'events', label: 'Guild Events', icon: Trophy },
+  { view: 'tournaments', label: 'Tournaments', icon: Medal },
   { view: 'ranking', label: 'Rankings', icon: Medal, rankingOnly: true },
   { view: 'announcements', label: 'Announcements', icon: Megaphone },
   { view: 'chat', label: 'Chat', icon: MessageCircle, chatOnly: true },

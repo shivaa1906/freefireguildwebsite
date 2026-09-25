@@ -28,11 +28,922 @@
       "guildName": "SQUADEㅤL4X",
       "guildLevel": 4,
       "capacity": 35,
-      "memberCount": 12,
+      "memberCount": 17,
       "ownerId": "2300346108",
       "ownerName": "Unknown",
       "region": "IND",
-      "refreshedAt": "2026-09-09T05:35:22.711Z"
+      "refreshedAt": "2026-09-25T05:37:55.860Z"
+    }
+  ],
+  "audit_logs": [
+    {
+      "id": "audit-1790309815277-b71a4ca164e2",
+      "timestamp": "2026-09-25T04:16:55.277Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790309828460-d903d00fce50",
+      "timestamp": "2026-09-25T04:17:08.460Z",
+      "eventType": "onboarding_dm_sent",
+      "action": "onboarding_dm_sent",
+      "source": "discord",
+      "success": true,
+      "actorName": "discord",
+      "actorRole": "system",
+      "targetDiscordId": "788970167907778562",
+      "newValue": {
+        "role": "admin"
+      },
+      "reason": "Managed Discord role assigned to unknown user"
+    },
+    {
+      "id": "audit-1790309828460-1d9530ae0582",
+      "timestamp": "2026-09-25T04:17:08.460Z",
+      "eventType": "authentication_success",
+      "action": "login",
+      "source": "oauth",
+      "success": true,
+      "actorId": "discord_788970167907778562",
+      "actorDiscordId": "788970167907778562",
+      "actorName": "Shiva",
+      "actorRole": "admin",
+      "targetId": "discord_788970167907778562",
+      "targetDiscordId": "788970167907778562",
+      "targetName": "Shiva",
+      "newValue": {
+        "role": "admin",
+        "status": "approved"
+      },
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit-1790311965652-26304719e3bd",
+      "timestamp": "2026-09-25T04:52:45.652Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311965769-ba5b4b261ef4",
+      "timestamp": "2026-09-25T04:52:45.769Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311965798-a4448f515ba5",
+      "timestamp": "2026-09-25T04:52:45.798Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790311971503-03e7a2b4e05e",
+      "timestamp": "2026-09-25T04:52:51.503Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311971589-4c720a82ef40",
+      "timestamp": "2026-09-25T04:52:51.589Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311971648-6cc74389e788",
+      "timestamp": "2026-09-25T04:52:51.648Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790311974168-595bc99c0400",
+      "timestamp": "2026-09-25T04:52:54.168Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311974272-93393628dcfa",
+      "timestamp": "2026-09-25T04:52:54.272Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311974286-15d7e42c2f12",
+      "timestamp": "2026-09-25T04:52:54.286Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790311981906-bcbaf2eb05b9",
+      "timestamp": "2026-09-25T04:53:01.906Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311981987-27e868d5674d",
+      "timestamp": "2026-09-25T04:53:01.988Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790311982020-d76cb512080a",
+      "timestamp": "2026-09-25T04:53:02.020Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790311988988-ef4fb72a0e7b",
+      "timestamp": "2026-09-25T04:53:08.988Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790314238675-4c9b24b78f4a",
+      "timestamp": "2026-09-25T05:30:38.675Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790314238681-1b98e7daf5c8",
+      "timestamp": "2026-09-25T05:30:38.681Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790314238686-21eab3f3c8ad",
+      "timestamp": "2026-09-25T05:30:38.686Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790314238703-be38b5c73a6d",
+      "timestamp": "2026-09-25T05:30:38.703Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790314238787-045f0a122e0b",
+      "timestamp": "2026-09-25T05:30:38.787Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790314238802-5c05e2e803c6",
+      "timestamp": "2026-09-25T05:30:38.802Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790314238806-0a09e32f875e",
+      "timestamp": "2026-09-25T05:30:38.806Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790314238808-3c224f953ff2",
+      "timestamp": "2026-09-25T05:30:38.808Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790314238809-4d36c0cfa398",
+      "timestamp": "2026-09-25T05:30:38.809Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790314650382-c2846e548b6c",
+      "timestamp": "2026-09-25T05:37:30.383Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790314650384-198264dabc26",
+      "timestamp": "2026-09-25T05:37:30.384Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790314650385-22a8c2f08721",
+      "timestamp": "2026-09-25T05:37:30.385Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790314650386-6a5028bb826f",
+      "timestamp": "2026-09-25T05:37:30.386Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790314650475-523692470c52",
+      "timestamp": "2026-09-25T05:37:30.475Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790314650477-3f889aec4c1d",
+      "timestamp": "2026-09-25T05:37:30.477Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790314650478-88ba6b9aa3c0",
+      "timestamp": "2026-09-25T05:37:30.479Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790314650480-e1468011ca3a",
+      "timestamp": "2026-09-25T05:37:30.480Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790314650520-7ea42a6abaff",
+      "timestamp": "2026-09-25T05:37:30.520Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790314666965-e12da415e883",
+      "timestamp": "2026-09-25T05:37:46.965Z",
+      "eventType": "onboarding_dm_sent",
+      "action": "onboarding_dm_sent",
+      "source": "discord",
+      "success": true,
+      "actorName": "discord",
+      "actorRole": "system",
+      "targetDiscordId": "788970167907778562",
+      "newValue": {
+        "role": "admin"
+      },
+      "reason": "Managed Discord role assigned to unknown user"
+    },
+    {
+      "id": "audit-1790314666965-78f8a7337675",
+      "timestamp": "2026-09-25T05:37:46.965Z",
+      "eventType": "authentication_success",
+      "action": "login",
+      "source": "oauth",
+      "success": true,
+      "actorId": "discord_788970167907778562",
+      "actorDiscordId": "788970167907778562",
+      "actorName": "Shiva",
+      "actorRole": "admin",
+      "targetId": "discord_788970167907778562",
+      "targetDiscordId": "788970167907778562",
+      "targetName": "Shiva",
+      "newValue": {
+        "role": "admin",
+        "status": "approved"
+      },
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit-1790315470862-7773e0fb0099",
+      "timestamp": "2026-09-25T05:51:10.862Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315470871-85bafd4d81fd",
+      "timestamp": "2026-09-25T05:51:10.871Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790315470872-7498ba570800",
+      "timestamp": "2026-09-25T05:51:10.872Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790315470874-7d29357bd681",
+      "timestamp": "2026-09-25T05:51:10.874Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790315470888-6fafcd246b20",
+      "timestamp": "2026-09-25T05:51:10.889Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members/discord_1390961878481637463/profile"
+      }
+    },
+    {
+      "id": "audit-1790315471023-822af7e8f3fd",
+      "timestamp": "2026-09-25T05:51:11.023Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members/discord_1390961878481637463/profile"
+      }
+    },
+    {
+      "id": "audit-1790315471029-c15688516b38",
+      "timestamp": "2026-09-25T05:51:11.029Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790315471034-9840771907bd",
+      "timestamp": "2026-09-25T05:51:11.034Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315471040-ccb70b29e1d6",
+      "timestamp": "2026-09-25T05:51:11.040Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790315471046-a53134444586",
+      "timestamp": "2026-09-25T05:51:11.046Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790315471048-3132eaa8c7f0",
+      "timestamp": "2026-09-25T05:51:11.048Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790315471106-1eae62e7451c",
+      "timestamp": "2026-09-25T05:51:11.106Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members/discord_1390961878481637463/profile"
+      }
+    },
+    {
+      "id": "audit-1790315471470-d59aba2b71e0",
+      "timestamp": "2026-09-25T05:51:11.470Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315471561-f9946b4489bb",
+      "timestamp": "2026-09-25T05:51:11.562Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315471602-781259a8f2fe",
+      "timestamp": "2026-09-25T05:51:11.602Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790315478151-3e4fb45000eb",
+      "timestamp": "2026-09-25T05:51:18.151Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315478251-3935ffa971ec",
+      "timestamp": "2026-09-25T05:51:18.251Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315478272-b2cd808ebb3f",
+      "timestamp": "2026-09-25T05:51:18.272Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790315488006-708fef29478b",
+      "timestamp": "2026-09-25T05:51:28.006Z",
+      "eventType": "onboarding_dm_sent",
+      "action": "onboarding_dm_sent",
+      "source": "discord",
+      "success": true,
+      "actorName": "discord",
+      "actorRole": "system",
+      "targetDiscordId": "788970167907778562",
+      "newValue": {
+        "role": "admin"
+      },
+      "reason": "Managed Discord role assigned to unknown user"
+    },
+    {
+      "id": "audit-1790315488007-c04a8ff3a11d",
+      "timestamp": "2026-09-25T05:51:28.007Z",
+      "eventType": "authentication_success",
+      "action": "login",
+      "source": "oauth",
+      "success": true,
+      "actorId": "discord_788970167907778562",
+      "actorDiscordId": "788970167907778562",
+      "actorName": "Shiva",
+      "actorRole": "admin",
+      "targetId": "discord_788970167907778562",
+      "targetDiscordId": "788970167907778562",
+      "targetName": "Shiva",
+      "newValue": {
+        "role": "admin",
+        "status": "approved"
+      },
+      "ipAddress": "127.0.0.1"
+    },
+    {
+      "id": "audit-1790315817743-352807a1b6d3",
+      "timestamp": "2026-09-25T05:56:57.743Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790315817751-795ecbcb8c70",
+      "timestamp": "2026-09-25T05:56:57.752Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315817755-95e513b24aba",
+      "timestamp": "2026-09-25T05:56:57.755Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790315817756-04eb43270345",
+      "timestamp": "2026-09-25T05:56:57.756Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790315817845-e70b7bb78c6b",
+      "timestamp": "2026-09-25T05:56:57.845Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-scores"
+      }
+    },
+    {
+      "id": "audit-1790315817849-fdf605ad973d",
+      "timestamp": "2026-09-25T05:56:57.849Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/guild-profile"
+      }
+    },
+    {
+      "id": "audit-1790315817851-4eaebdfae3f9",
+      "timestamp": "2026-09-25T05:56:57.851Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315817856-69a23ad93cf9",
+      "timestamp": "2026-09-25T05:56:57.856Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/ranking-tasks"
+      }
+    },
+    {
+      "id": "audit-1790315817864-085397fb7b3f",
+      "timestamp": "2026-09-25T05:56:57.864Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790315826874-dd64b40548e6",
+      "timestamp": "2026-09-25T05:57:06.874Z",
+      "eventType": "authentication_failed",
+      "action": "authentication_failed",
+      "source": "security",
+      "success": true,
+      "reason": "Discord role mapping is unavailable for recruit.",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "Discord role mapping is unavailable for recruit."
+      }
+    },
+    {
+      "id": "audit-1790315827755-e5e281e1495a",
+      "timestamp": "2026-09-25T05:57:07.755Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315827859-be22e37d0e79",
+      "timestamp": "2026-09-25T05:57:07.859Z",
+      "eventType": "unauthorized_request",
+      "action": "unauthorized_request",
+      "source": "security",
+      "success": true,
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "path": "/api/members"
+      }
+    },
+    {
+      "id": "audit-1790315827869-e89300c146ab",
+      "timestamp": "2026-09-25T05:57:07.869Z",
+      "eventType": "websocket_rejected",
+      "action": "websocket_rejected",
+      "source": "security",
+      "success": true,
+      "reason": "authentication_required",
+      "ipAddress": "127.0.0.1",
+      "metadata": {
+        "reason": "authentication_required"
+      }
+    },
+    {
+      "id": "audit-1790315839646-c19063ec616d",
+      "timestamp": "2026-09-25T05:57:19.646Z",
+      "eventType": "onboarding_dm_sent",
+      "action": "onboarding_dm_sent",
+      "source": "discord",
+      "success": true,
+      "actorName": "discord",
+      "actorRole": "system",
+      "targetDiscordId": "788970167907778562",
+      "newValue": {
+        "role": "admin"
+      },
+      "reason": "Managed Discord role assigned to unknown user"
+    },
+    {
+      "id": "audit-1790315839647-373a07df0cc8",
+      "timestamp": "2026-09-25T05:57:19.647Z",
+      "eventType": "authentication_success",
+      "action": "login",
+      "source": "oauth",
+      "success": true,
+      "actorId": "discord_788970167907778562",
+      "actorDiscordId": "788970167907778562",
+      "actorName": "Shiva",
+      "actorRole": "admin",
+      "targetId": "discord_788970167907778562",
+      "targetDiscordId": "788970167907778562",
+      "targetName": "Shiva",
+      "newValue": {
+        "role": "admin",
+        "status": "approved"
+      },
+      "ipAddress": "127.0.0.1"
     }
   ]
 }

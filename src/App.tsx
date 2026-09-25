@@ -1,6 +1,7 @@
-import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { AuthProvider, useAuth, type AppView } from '@/context/AuthContext';
+import type { GuildMember } from '@/types';
 import { LandingPage } from '@/pages/LandingPage';
 import { PendingApproval } from '@/pages/PendingApproval';
 import { LoadingSequence } from '@/components/effects/LoadingSequence';
@@ -9,6 +10,7 @@ import { GuildLobby } from '@/pages/GuildLobby';
 import { GuildMembers } from '@/pages/GuildMembers';
 import { MemberProfile } from '@/pages/MemberProfile';
 import { GuildEvents } from '@/pages/GuildEvents';
+import { Tournaments } from '@/pages/Tournaments';
 import { RankingPage } from '@/pages/RankingPage';
 import { Announcements } from '@/pages/Announcements';
 import { ChatPage } from '@/pages/ChatPage';
@@ -23,7 +25,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
     return { hasError: true };
   }
 
-  componentDidCatch(_error: Error, _info: ErrorInfo) {
+  componentDidCatch() {
     this.setState({ hasError: true });
   }
 
@@ -35,14 +37,38 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
 function AppContent() {
   const { authLoading, isAuthenticated, view, setView, members, member } = useAuth();
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const [openedMember, setOpenedMember] = useState<GuildMember | null>(null);
   const query = new URLSearchParams(window.location.search);
   const memberId = query.get('member');
   const adminTab = query.get('adminTab');
-  const openedMember = memberId ? members.find((item) => item.id === memberId) : null;
+  const isRootPath = window.location.pathname === '/';
 
-  if (window.location.pathname !== '/') {
-    return <NotFoundPage />;
-  }
+  useEffect(() => {
+    if (!memberId) {
+      setOpenedMember(null);
+      return;
+    }
+    const fromList = members.find((item) => item.id === memberId);
+    if (fromList) {
+      setOpenedMember(fromList);
+      return;
+    }
+    if (!member) {
+      setOpenedMember(null);
+      return;
+    }
+    let ignore = false;
+    void import('@/lib/api').then(({ guildApi }) => guildApi.memberProfile<GuildMember>(memberId)
+      .then((profile) => {
+        if (!ignore) setOpenedMember(profile);
+      })
+      .catch(() => {
+        if (!ignore) setOpenedMember(null);
+      }));
+    return () => {
+      ignore = true;
+    };
+  }, [memberId, member, members]);
 
   useEffect(() => {
     if (memberId && view === 'loading') setView('members');
@@ -64,6 +90,10 @@ function AppContent() {
     window.localStorage.setItem(promptLastShownKey, String(Date.now()));
     setShowApiKeyPrompt(true);
   }, [member]);
+
+  if (!isRootPath) {
+    return <NotFoundPage />;
+  }
 
   if (authLoading) {
     return memberId ? <MemberDetailsLoading /> : <LoadingSequence onComplete={() => undefined} />;
@@ -114,6 +144,7 @@ function AppContent() {
       )}
       {view === 'profile' && <ProfilePage />}
       {view === 'events' && <GuildEvents />}
+      {view === 'tournaments' && <Tournaments />}
       {view === 'ranking' && <RankingPage />}
       {view === 'announcements' && <Announcements />}
       {view === 'chat' && <ChatPage />}

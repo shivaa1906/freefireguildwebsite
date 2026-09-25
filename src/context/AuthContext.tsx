@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import type { GuildMember, UserRole, ApprovalStatus, CharacterConfig, JoinApplication, GuildEvent, Announcement, GuildSettings, GuildProfile, DiscordPresence, MemberStats, ChatMessage, ChatTypingUser, RankingTask, RankingScore } from '@/types';
 import { CHAT_ROLES, EMPTY_MEMBER_STATS } from '@/types';
-import { mockAnnouncements, mockEvents, mockMembers } from '@/data/mockData';
 import { BACKEND_URL, guildApi } from '@/lib/api';
 
 export type AppView =
@@ -13,6 +13,7 @@ export type AppView =
   | 'profile'
   | 'character'
   | 'events'
+  | 'tournaments'
   | 'ranking'
   | 'announcements'
   | 'chat'
@@ -33,7 +34,7 @@ interface AuthState {
   openComposer: (target: ComposerTarget) => void;
   clearComposer: () => void;
   updateCharacter: (config: CharacterConfig) => void;
-  updateMemberProfile: (changes: { bio?: string; stats?: MemberStats; freeFireUid?: string }) => void;
+  updateMemberProfile: (changes: { bio?: string; stats?: MemberStats; freeFireUid?: string; freeFireName?: string; preferredRegion?: string; preferredPlaystyle?: string; profileVisibility?: 'public' | 'guild' | 'private' }) => void;
   saveHlGamingApiKey: (apiKey: string) => Promise<void>;
   chatMessages: ChatMessage[];
   typingUsers: ChatTypingUser[];
@@ -54,6 +55,8 @@ interface AuthState {
   announcements: Announcement[];
   createMember: (member: GuildMember) => void;
   createEvent: (event: GuildEvent) => void;
+  registerForEvent: (eventId: string) => Promise<boolean>;
+  leaveEvent: (eventId: string) => Promise<boolean>;
   createAnnouncement: (announcement: Announcement) => void;
   updateAnnouncement: (id: string, changes: Partial<Announcement>) => void;
   deleteAnnouncement: (id: string) => void;
@@ -118,9 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [member, setMember] = useState<GuildMember | null>(cachedMember);
   const [view, setView] = useState<AppView>(cachedMember ? 'loading' : 'landing');
   const [composerTarget, setComposerTarget] = useState<ComposerTarget | null>(null);
-  const [members, setMembers] = useState<GuildMember[]>(mockMembers);
-  const [events, setEvents] = useState<GuildEvent[]>(mockEvents);
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const [members, setMembers] = useState<GuildMember[]>([]);
+  const [events, setEvents] = useState<GuildEvent[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [rankingTasks, setRankingTasks] = useState<RankingTask[]>([]);
   const [rankingScores, setRankingScores] = useState<RankingScore[]>([]);
   const [rankingError, setRankingError] = useState<string | null>(null);
@@ -131,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queuedChatPayloads = useRef<string[]>([]);
   const [guildSettings, setGuildSettings] = useState<GuildSettings>({ id: 'guild', name: 'Free Fire Guild HQ', description: 'A competitive Free Fire guild. Booyah or nothing.' });
   const [theme, setThemeState] = useState<'dark' | 'bright'>(() => (localStorage.getItem('guild-theme') as 'dark' | 'bright') || 'dark');
-  const [guildStats, setGuildStats] = useState({ totalMembers: mockMembers.length, onlineMembers: mockMembers.filter((item) => item.isOnline).length });
+  const [guildStats, setGuildStats] = useState({ totalMembers: 0, onlineMembers: 0 });
   const [guildProfile, setGuildProfile] = useState<GuildProfile | null>(null);
   const [guildProfileError, setGuildProfileError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<DisplayPreferences>(() => {
@@ -268,19 +271,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (nextTheme: 'dark' | 'bright') => {
     if (nextTheme === theme) return;
-    const applyTheme = () => {
-      document.documentElement.classList.add('theme-switching');
-      setThemeState(nextTheme);
-      localStorage.setItem('guild-theme', nextTheme);
-      document.documentElement.classList.toggle('theme-bright', nextTheme === 'bright');
-      window.setTimeout(() => document.documentElement.classList.remove('theme-switching'), 500);
-    };
-    applyTheme();
+    document.documentElement.classList.add('theme-switching');
+    document.documentElement.classList.toggle('theme-bright', nextTheme === 'bright');
+    flushSync(() => setThemeState(nextTheme));
+    localStorage.setItem('guild-theme', nextTheme);
+    window.setTimeout(() => document.documentElement.classList.remove('theme-switching'), 500);
   };
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-bright', theme === 'bright');
   }, [theme]);
+
+  useEffect(() => {
+    document.title = guildSettings.name || 'Free Fire Guild Website';
+  }, [guildSettings.name]);
 
   useEffect(() => {
     let active = true;
@@ -305,7 +309,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAnnouncements(remoteAnnouncements);
       if (remoteSettings.length) setGuildSettings(remoteSettings[0]);
     }).catch(() => {
-      // The mock collections keep the UI usable while MongoDB is offline.
+      setMembers([]);
+      setEvents([]);
+      setAnnouncements([]);
+      setGuildStats({ totalMembers: 0, onlineMembers: 0 });
     });
     return () => { active = false; };
   }, []);
@@ -361,7 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data) as { type?: string; title?: string; content?: string; discordId?: string; status?: DiscordPresence; memberStatus?: ApprovalStatus; isOnline?: boolean; discordStatus?: string; role?: UserRole; isOwner?: boolean; displayName?: string; discordName?: string; discordDisplayName?: string; discordAvatar?: string; discordBio?: string; bio?: string; totalMembers?: number; onlineMembers?: number; chatMessage?: ChatMessage; messages?: ChatMessage[]; messageId?: string; typingUser?: ChatTypingUser; messageIdList?: string[]; readerId?: string; score?: RankingScore };
+      const message = JSON.parse(event.data) as { type?: string; title?: string; content?: string; discordId?: string; status?: DiscordPresence; memberStatus?: ApprovalStatus; isOnline?: boolean; discordStatus?: string; role?: UserRole; isOwner?: boolean; displayName?: string; discordName?: string; discordDisplayName?: string; discordAvatar?: string; discordBio?: string; bio?: string; totalMembers?: number; onlineMembers?: number; member?: GuildMember; chatMessage?: ChatMessage; messages?: ChatMessage[]; messageId?: string; typingUser?: ChatTypingUser; messageIdList?: string[]; readerId?: string; score?: RankingScore };
       if (message.type === 'guild:stats' && typeof message.totalMembers === 'number' && typeof message.onlineMembers === 'number') {
         setGuildStats({ totalMembers: message.totalMembers, onlineMembers: message.onlineMembers });
         return;
@@ -424,6 +431,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRankingScores((current) => current.some((score) => score.id === message.score!.id) ? current : [message.score!, ...current]);
         return;
       }
+      if (message.type === 'member:upsert' && message.member) {
+        setMembers((current) => [message.member!, ...current.filter((item) => item.id !== message.member!.id)]);
+        setMember((current) => current?.id === message.member!.id ? { ...current, ...message.member } : current);
+        return;
+      }
       if (!message.discordId) return;
       if (message.type === 'presence' && message.status) {
         latestPresenceRef.current[message.discordId!] = message.status;
@@ -453,18 +465,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       socket.close();
     };
   }, []);
-
-  function readStoredDirectMessages(): ChatMessage[] {
-    try {
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      const messages = JSON.parse(localStorage.getItem('guild-direct-messages') || '[]') as ChatMessage[];
-      const recentMessages = messages.filter((message) => Date.parse(message.createdAt) >= cutoff);
-      localStorage.setItem('guild-direct-messages', JSON.stringify(recentMessages));
-      return recentMessages;
-    } catch {
-      return [];
-    }
-  }
 
   function storeDirectMessages(messages: ChatMessage[]) {
     const directMessages = messages.filter((message) => message.channel === 'dm');
@@ -506,15 +506,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('guild-auth-member', JSON.stringify(normalizedMember));
         setMembers((current) => [...current.filter((item) => item.id !== normalizedMember.id), normalizedMember]);
         setAuthenticated(true);
-        setView(session.member.isInDiscordGuild === false ? 'pending' : 'loading');
+        setView(session.member.status === 'pending' ? 'pending' : 'loading');
       })
       .catch(() => {
-        // Keep the cached authenticated shell during short API interruptions or redeploys.
-        if (!cachedMember) {
-          setAuthenticated(false);
-          setMember(null);
-          setView('landing');
-        }
+        localStorage.removeItem('guild-auth-member');
+        setAuthenticated(false);
+        setMember(null);
+        setView('landing');
       })
       .finally(() => {
         if (active) setAuthLoading(false);
@@ -531,7 +529,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setMember(newMember);
     setMembers((current) => [...current.filter((item) => item.id !== newMember.id), newMember]);
-    void guildApi.save('members', newMember).catch(() => undefined);
+    void guildApi.save('members', { id: newMember.id, bio: newMember.bio, character: newMember.character }).catch(() => undefined);
     setView('pending');
   };
 
@@ -540,9 +538,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newMember = { ...member, status: 'pending' as ApprovalStatus, role: 'recruit' as UserRole, freeFireUid: application.gameId, application };
     setMember(newMember);
     setMembers((current) => [...current.filter((item) => item.id !== newMember.id), newMember]);
-    void guildApi.save<GuildMember>('members', newMember).then((savedMember) => {
-      setMember(savedMember);
-      setMembers((current) => [...current.filter((item) => item.id !== savedMember.id), savedMember]);
+    void guildApi.save('members', { id: newMember.id, freeFireUid: newMember.freeFireUid, application: newMember.application, bio: newMember.bio, character: newMember.character }).then((savedMember) => {
+      const mergedMember = { ...newMember, ...savedMember } as GuildMember;
+      setMember(mergedMember);
+      setMembers((current) => [...current.filter((item) => item.id !== mergedMember.id), mergedMember]);
     }).catch(() => undefined);
     setView('pending');
   };
@@ -552,6 +551,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthenticated(false);
     setMember(null);
     localStorage.removeItem('guild-auth-member');
+    localStorage.removeItem('guild-direct-messages');
     setView('landing');
   };
 
@@ -561,12 +561,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateMemberProfile = (changes: { bio?: string; stats?: MemberStats; freeFireUid?: string }) => {
+  const updateMemberProfile = (changes: { bio?: string; stats?: MemberStats; freeFireUid?: string; freeFireName?: string; preferredRegion?: string; preferredPlaystyle?: string; profileVisibility?: 'public' | 'guild' | 'private' }) => {
     if (!member) return;
     const updatedMember = { ...member, ...changes };
     setMember(updatedMember);
     setMembers((current) => current.map((item) => item.id === updatedMember.id ? updatedMember : item));
-    void guildApi.update<GuildMember>('members', updatedMember.id, changes).catch(() => undefined);
+    void guildApi.updateMemberProfile<GuildMember>(updatedMember.id, changes).catch(() => undefined);
   };
 
   const saveHlGamingApiKey = async (apiKey: string) => {
@@ -637,7 +637,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const unsuspendMember = async (id: string) => {
-    const updatedMember = await guildApi.update<GuildMember>('members', id, { status: 'approved' });
+    const result = await guildApi.unsuspendMember<{ member: GuildMember }>(id);
+    const updatedMember = result.member;
     setMembers((current) => current.map((item) => item.id === id ? { ...item, ...updatedMember } : item));
     setMember((current) => current?.id === id ? { ...current, ...updatedMember } : current);
   };
@@ -655,6 +656,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const createEvent = (event: GuildEvent) => {
     setEvents((current) => [event, ...current]);
     void guildApi.save('events', event).catch(() => undefined);
+  };
+  const registerForEvent = async (eventId: string) => {
+    if (!member) return false;
+    try {
+      const updatedEvent = await guildApi.registerForEvent<GuildEvent>(eventId);
+      setEvents((current) => current.map((event) => event.id === eventId ? updatedEvent : event));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const leaveEvent = async (eventId: string) => {
+    if (!member) return false;
+    try {
+      const updatedEvent = await guildApi.leaveEvent<GuildEvent>(eventId);
+      setEvents((current) => current.map((event) => event.id === eventId ? updatedEvent : event));
+      return true;
+    } catch {
+      return false;
+    }
   };
   const createAnnouncement = (announcement: Announcement) => {
     setAnnouncements((current) => [announcement, ...current]);
@@ -690,6 +711,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch {
+        // Ignore guild profile refresh failures and keep the current member state.
       }
     }
   };
@@ -771,6 +793,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         announcements,
         createMember,
         createEvent,
+        registerForEvent,
+        leaveEvent,
         createAnnouncement,
         updateAnnouncement,
         deleteAnnouncement,
@@ -809,5 +833,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
-
-export { mockMembers };

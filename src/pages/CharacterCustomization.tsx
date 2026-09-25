@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { CharacterConfig } from '@/types';
 import { GridBackground, ParticleField, ScanLines, Vignette, HudCorners } from '@/components/effects/VisualEffects';
-import { mockCustomizationItems } from '@/data/mockData';
 import { Shirt, Check, Save, RotateCw, Sparkles, User, Eye, Zap } from 'lucide-react';
 
 type Tab = 'appearance' | 'outfit' | 'accessories' | 'effects';
@@ -54,9 +53,7 @@ export function CharacterCustomization() {
     setTimeout(() => setSaveFlash(false), 2000);
   };
 
-  const availableItems = mockCustomizationItems.filter(
-    (item) => item.category === activeTab && item.enabled
-  );
+  const availableItems: Array<{ id: string; category: string; subcategory: string; name: string; rarity: 'standard' | 'special' | 'admin' | 'event'; enabled: boolean }> = [];
 
   const subcategories = [...new Set(availableItems.map((item) => item.subcategory))];
 
